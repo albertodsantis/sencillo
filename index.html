@@ -32,7 +32,7 @@
             Music, Heart, Radio, Calendar, BarChart3, Library, 
             Save, User, Shuffle, CheckCircle2, Clock, Headphones, 
             LogOut, Sparkles, SmilePlus, Mic2, Search, Loader2, 
-            Share, PlusSquare, X, ExternalLink // Nuevo icono para el enlace
+            Share, PlusSquare, X, ExternalLink 
         } from 'lucide-react';
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -122,7 +122,7 @@
                 danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100",
                 ghost: "text-gray-500 hover:bg-gray-100",
                 outline: "border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50",
-                spotify: "bg-green-500 text-white hover:bg-green-600 shadow-md shadow-green-200" // Nuevo estilo Spotify
+                spotify: "bg-green-500 text-white hover:bg-green-600 shadow-md shadow-green-200"
             };
             return React.createElement('button', { 
                 onClick, disabled, 
@@ -225,7 +225,8 @@
         };
 
         const LoginScreen = ({ onLogin }) => {
-            return React.createElement('div', { className: "h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-indigo-50 to-pink-50 animate-in fade-in duration-500" },
+            // FIX: Changed h-full to min-h-[100dvh] to ensure full screen centering
+            return React.createElement('div', { className: "min-h-[100dvh] flex flex-col items-center justify-center p-6 bg-gradient-to-br from-indigo-50 to-pink-50 animate-in fade-in duration-500" },
                 React.createElement('div', { className: "bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-xl max-w-sm w-full text-center border border-white/50" },
                     React.createElement('div', { className: "w-20 h-20 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-indigo-600 shadow-inner" },
                         React.createElement(Radio, { size: 40 })
@@ -333,15 +334,13 @@
 
             const handleSubmit = () => {
                 if (!localSong || !localArtist) return;
-                // Construir enlace de búsqueda Spotify
                 const spotifyLink = `https://open.spotify.com/search/${encodeURIComponent(localSong + " " + localArtist)}`;
-                
                 onUpdateEntry({
                     [`players.${userRole}.song_title`]: localSong,
                     [`players.${userRole}.artist`]: localArtist,
                     [`players.${userRole}.comment`]: localComment,
                     [`players.${userRole}.status`]: 'enviado',
-                    [`players.${userRole}.spotify_link`]: spotifyLink // Guardamos el enlace
+                    [`players.${userRole}.spotify_link`]: spotifyLink 
                 });
             };
 
@@ -637,6 +636,7 @@
             useEffect(() => {
                 if (!authUser) return;
 
+                // Rutas simples (raíz) para tu DB personal
                 const themesQuery = query(collection(db, 'themes'));
                 const unsubThemes = onSnapshot(themesQuery, (snap) => {
                     const list = snap.docs.map(d => ({id: d.id, ...d.data()}));
