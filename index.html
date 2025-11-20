@@ -21,6 +21,11 @@
             }
         }
     </script>
+    <style>
+        /* Deshabilitar el pull-to-refresh nativo del navegador para usar el nuestro personalizado */
+        body { overscroll-behavior-y: none; }
+        .ptr-element { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans overflow-hidden">
     <div id="root"></div>
@@ -32,7 +37,7 @@
             Music, Heart, Radio, Calendar, BarChart3, Library, 
             Save, User, Shuffle, CheckCircle2, Clock, Headphones, 
             LogOut, Sparkles, SmilePlus, Mic2, Search, Loader2, 
-            Share, PlusSquare, X, ExternalLink 
+            Share, PlusSquare, X, ExternalLink, RefreshCw
         } from 'lucide-react';
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -114,6 +119,84 @@
         };
 
         // --- COMPONENTES UI ---
+        
+        // Pull To Refresh Component - Lógica moderna de refresco
+        const PullToRefresh = ({ children }) => {
+            const [startPoint, setStartPoint] = useState(0);
+            const [pullChange, setPullChange] = useState(0);
+            const [refreshing, setRefreshing] = useState(false);
+            const containerRef = useRef(null);
+
+            const initLoading = () => {
+                setRefreshing(true);
+                // Simulamos un refresco visual de 1.5s
+                setTimeout(() => {
+                    setRefreshing(false);
+                    setPullChange(0);
+                }, 1500);
+            };
+
+            const onTouchStart = (e) => {
+                const scrollTop = containerRef.current?.scrollTop || 0;
+                if (scrollTop === 0) {
+                    setStartPoint(e.targetTouches[0].clientY);
+                }
+            };
+
+            const onTouchMove = (e) => {
+                if (!startPoint) return;
+                const scrollTop = containerRef.current?.scrollTop || 0;
+                const currentPoint = e.targetTouches[0].clientY;
+                const pullLength = currentPoint - startPoint;
+
+                // Solo permitir pull si estamos arriba del todo y arrastrando hacia abajo
+                if (scrollTop === 0 && pullLength > 0) {
+                    // Formula de resistencia logarítmica para sensación nativa
+                    const resist = pullLength * 0.4; 
+                    setPullChange(resist);
+                }
+            };
+
+            const onTouchEnd = () => {
+                if (!startPoint) return;
+                if (pullChange > 70) { // Umbral de disparo
+                    initLoading();
+                } else {
+                    setPullChange(0);
+                }
+                setStartPoint(0);
+            };
+
+            return React.createElement('div', {
+                ref: containerRef,
+                className: "flex-1 overflow-y-auto scrollbar-hide relative h-full",
+                onTouchStart, onTouchMove, onTouchEnd,
+                style: { overscrollBehavior: 'contain' }
+            }, 
+                // Indicador de Refresco (Spinner)
+                React.createElement('div', {
+                    className: "absolute top-0 left-0 w-full flex justify-center pointer-events-none z-20",
+                    style: { 
+                        transform: `translateY(${refreshing ? 20 : pullChange - 50}px)`,
+                        opacity: refreshing ? 1 : Math.min(pullChange / 50, 1),
+                        transition: !startPoint ? 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s' : 'none'
+                    }
+                },
+                    React.createElement('div', { className: "bg-white p-2.5 rounded-full shadow-lg border border-indigo-100 text-indigo-600" },
+                        React.createElement(Loader2, { className: `animate-spin`, size: 22 })
+                    )
+                ),
+                // Contenido Desplazable
+                React.createElement('div', {
+                    className: "min-h-full",
+                    style: { 
+                        transform: `translateY(${refreshing ? 60 : pullChange}px)`,
+                        transition: !startPoint ? 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
+                    }
+                }, children)
+            );
+        };
+
         const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
             const baseStyle = "px-4 py-3 rounded-xl font-medium transition-transform active:scale-95 flex items-center justify-center gap-2 touch-manipulation select-none";
             const variants = {
@@ -225,7 +308,6 @@
         };
 
         const LoginScreen = ({ onLogin }) => {
-            // FIX: Changed h-full to min-h-[100dvh] to ensure full screen centering
             return React.createElement('div', { className: "min-h-[100dvh] flex flex-col items-center justify-center p-6 bg-gradient-to-br from-indigo-50 to-pink-50 animate-in fade-in duration-500" },
                 React.createElement('div', { className: "bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-xl max-w-sm w-full text-center border border-white/50" },
                     React.createElement('div', { className: "w-20 h-20 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-indigo-600 shadow-inner" },
@@ -701,7 +783,9 @@
 
             return React.createElement('div', { className: "h-[100dvh] w-full bg-[#f8fafc] text-gray-800 font-sans fixed inset-0 overflow-hidden flex flex-col" },
                 React.createElement(InstallPrompt),
-                React.createElement('div', { className: "flex-1 overflow-y-auto scrollbar-hide overscroll-contain", style: { WebkitOverflowScrolling: 'touch' } },
+                
+                // Usamos el nuevo componente PullToRefresh
+                React.createElement(PullToRefresh, {},
                     React.createElement('div', { className: "max-w-md mx-auto min-h-full bg-white/50 sm:shadow-2xl sm:border-x sm:border-gray-100" },
                        currentScreen === 'home' ? React.createElement(HomeScreen, { entry: todayEntry, themes, userRole, setScreen: setCurrentScreen, onLogout: () => { setUserRole(null); localStorage.removeItem('maga_beto_role'); } }) :
                        currentScreen === 'today' ? React.createElement(TodayScreen, { entry: todayEntry, userRole, onUpdateEntry: handleUpdateEntry }) :
@@ -709,6 +793,7 @@
                        React.createElement(StatsScreen, { userId: authUser?.uid })
                     )
                 ),
+
                 React.createElement('nav', { className: "bg-white/90 backdrop-blur-md border-t border-gray-200 flex justify-around py-3 px-4 z-50 pb-[env(safe-area-inset-bottom,20px)] sm:pb-3 max-w-md mx-auto w-full shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" },
                     ['home', 'today', 'themes', 'stats'].map(screen => 
                         React.createElement('button', { 
