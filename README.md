@@ -1,1 +1,731 @@
-# mbapp
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="M&B Play">
+    <title>M&B Play</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script type="importmap">
+        {
+            "imports": {
+                "react": "https://esm.sh/react@18.2.0",
+                "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+                "lucide-react": "https://esm.sh/lucide-react@0.263.1"
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans overflow-hidden">
+    <div id="root"></div>
+
+    <script type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            Music, Heart, Radio, Calendar, BarChart3, Library, 
+            Save, User, Shuffle, CheckCircle2, Clock, Headphones, 
+            LogOut, Sparkles, SmilePlus, Mic2, Search, Loader2, 
+            Share, PlusSquare, X, ExternalLink // Nuevo icono para el enlace
+        } from 'lucide-react';
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously,
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            onSnapshot, 
+            query, 
+            orderBy, 
+            limit, 
+            getDocs,
+            updateDoc,
+            addDoc, 
+            deleteDoc,
+            where,
+            increment
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // --- TU CONFIGURACIÓN REAL DE FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzbIz_VKis6nu1W7JWWeCSgLzBqJQ8HzY",
+            authDomain: "magapp-19035.firebaseapp.com",
+            projectId: "magapp-19035",
+            storageBucket: "magapp-19035.firebasestorage.app",
+            messagingSenderId: "1022326629606",
+            appId: "1:1022326629606:web:ebea8e95dd233bc6560727"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- CONSTANTES ---
+        const PLAYERS = {
+            player_1: { id: 'player_1', name: 'Maga', color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-200', countColor: 'bg-pink-100 text-pink-700', barColor: 'bg-pink-500' },
+            player_2: { id: 'player_2', name: 'Beto', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', countColor: 'bg-blue-100 text-blue-700', barColor: 'bg-blue-500' }
+        };
+
+        const EMOJIS = ["💘", "🔥", "😂", "😭", "🤨", "🤯", "💃", "😴"];
+
+        const DEFAULT_THEMES = [
+            "Celebrar tus pequeñas victorias", "Cocinar con ritmo", "Nostalgia bonita", "Caminar como si tuvieras una misión",
+            "Recordar tu infancia sin querer", "Entrenar", "Viajar mentalmente a otro país", "Manejar de noche",
+            "Que todos se saben", "Necesito bailar", "Con groove funky", "Liberar estrés acumulado",
+            "Antes de dormir", "Gritar en el coche", "Un domingo por la mañana", "Con vibe latina",
+            "Llorar", "Sentir que todo fluye", "Superar a tu ex", "Instrumental para concentrarte",
+            "Una noche melancólica mirando al techo", "Sentirte invencible", "Una noche tranquila", "Reírte un poco",
+            "Que te hace reír", "Desahogarte", "Dedicar a alguien que amas", "Cinematográfica",
+            "Empezar un día desde cero", "Acústica para relajarte", "Una noche de verano", "Bailar en la ducha sin vergüenza",
+            "Un momento íntimo", "Pensar en tu ex", "Sentirte poderoso", "Con piano que duele",
+            "Que te enamora aunque estés soltero", "Mejorar el estado de ánimo", "Un día de lluvia", "Sentir que eres el protagonista"
+        ];
+
+        const getTodayString = () => new Date().toISOString().split('T')[0];
+
+        // --- API MÚSICA ---
+        const searchMusic = async (term, type = 'song') => {
+            if (!term || term.length < 2) return [];
+            const entity = type === 'song' ? 'song' : 'musicArtist';
+            try {
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=${entity}&limit=5`);
+                if (!res.ok) return [];
+                const data = await res.json();
+                return data.results.map(item => ({
+                    id: item.trackId || item.artistId,
+                    title: type === 'song' ? item.trackName : item.artistName,
+                    subtitle: type === 'song' ? item.artistName : (item.primaryGenreName || 'Artista'),
+                    artist: item.artistName,
+                    track: item.trackName
+                }));
+            } catch (e) { return []; }
+        };
+
+        // --- COMPONENTES UI ---
+        const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
+            const baseStyle = "px-4 py-3 rounded-xl font-medium transition-transform active:scale-95 flex items-center justify-center gap-2 touch-manipulation select-none";
+            const variants = {
+                primary: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200",
+                secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50",
+                danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100",
+                ghost: "text-gray-500 hover:bg-gray-100",
+                outline: "border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50",
+                spotify: "bg-green-500 text-white hover:bg-green-600 shadow-md shadow-green-200" // Nuevo estilo Spotify
+            };
+            return React.createElement('button', { 
+                onClick, disabled, 
+                className: `${baseStyle} ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`,
+                style: { WebkitTapHighlightColor: 'transparent' }
+            }, children);
+        };
+
+        const PredictiveInput = ({ label, value, onChange, onSelect, placeholder, type = 'song' }) => {
+            const [suggestions, setSuggestions] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [showSuggestions, setShowSuggestions] = useState(false);
+            const wrapperRef = useRef(null);
+
+            useEffect(() => {
+                const timer = setTimeout(async () => {
+                    if (value.length >= 2 && showSuggestions) {
+                        setLoading(true);
+                        const results = await searchMusic(value, type);
+                        setSuggestions(results);
+                        setLoading(false);
+                    } else { setSuggestions([]); }
+                }, 500);
+                return () => clearTimeout(timer);
+            }, [value, type, showSuggestions]);
+
+            useEffect(() => {
+                function handleClickOutside(event) {
+                    if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                        setShowSuggestions(false);
+                    }
+                }
+                document.addEventListener("mousedown", handleClickOutside);
+                return () => document.removeEventListener("mousedown", handleClickOutside);
+            }, []);
+
+            const handleSelect = (item) => {
+                onChange(item.title);
+                setShowSuggestions(false);
+                if (onSelect) onSelect(item);
+            };
+
+            return React.createElement('div', { className: "mb-4 relative", ref: wrapperRef },
+                label && React.createElement('label', { className: "block text-xs font-bold text-gray-500 uppercase mb-1 ml-1" }, label),
+                React.createElement('div', { className: "relative" },
+                    React.createElement('input', {
+                        type: "text", value,
+                        onFocus: () => setShowSuggestions(true),
+                        onChange: (e) => { onChange(e.target.value); setShowSuggestions(true); },
+                        placeholder,
+                        className: "w-full p-3.5 pl-10 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-white text-base shadow-sm",
+                        autoComplete: "off"
+                    }),
+                    React.createElement('div', { className: "absolute left-3 top-3.5 text-gray-400 pointer-events-none" },
+                        loading ? React.createElement(Loader2, { size: 20, className: "animate-spin text-indigo-500" }) : React.createElement(Search, { size: 20 })
+                    )
+                ),
+                showSuggestions && suggestions.length > 0 && React.createElement('div', { className: "absolute z-50 w-full bg-white mt-1 rounded-xl shadow-xl border border-gray-100 overflow-hidden max-h-60 overflow-y-auto" },
+                    suggestions.map((item, idx) => React.createElement('div', {
+                        key: `${item.id}-${idx}`,
+                        onClick: () => handleSelect(item),
+                        className: "p-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors flex flex-col"
+                    },
+                        React.createElement('span', { className: "font-bold text-gray-800 text-sm" }, item.title),
+                        React.createElement('span', { className: "text-xs text-gray-500" }, item.subtitle)
+                    ))
+                )
+            );
+        };
+
+        // --- PANTALLAS ---
+        
+        const InstallPrompt = () => {
+            const [show, setShow] = useState(false);
+            useEffect(() => {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+                if (isIOS && !isStandalone && !localStorage.getItem('installPromptDismissed')) {
+                    setShow(true);
+                }
+            }, []);
+            if (!show) return null;
+            return React.createElement('div', { className: "fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom duration-500" },
+                React.createElement('div', { className: "bg-gray-900/95 backdrop-blur text-white p-4 rounded-2xl shadow-2xl border border-gray-700 relative" },
+                    React.createElement('button', { onClick: () => { setShow(false); localStorage.setItem('installPromptDismissed', 'true'); }, className: "absolute top-2 right-2 text-gray-400 hover:text-white" }, React.createElement(X, { size: 18 })),
+                    React.createElement('div', { className: "flex items-start gap-3" },
+                        React.createElement('div', { className: "bg-indigo-500 p-2 rounded-xl" }, React.createElement(Radio, { size: 24, className: "text-white" })),
+                        React.createElement('div', null,
+                            React.createElement('h4', { className: "font-bold text-sm mb-1" }, "Instala M&B Play"),
+                            React.createElement('p', { className: "text-xs text-gray-300 leading-relaxed" },
+                                "Para la mejor experiencia:", React.createElement('br'),
+                                "1. Toca ", React.createElement('strong', { className: "text-white inline-flex items-center gap-1" }, React.createElement(Share, { size: 10 }), " Compartir"), React.createElement('br'),
+                                "2. Elige ", React.createElement('strong', { className: "text-white inline-flex items-center gap-1" }, React.createElement(PlusSquare, { size: 10 }), " Agregar a Inicio")
+                            )
+                        )
+                    ),
+                    React.createElement('div', { className: "absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-gray-900 rotate-45 border-r border-b border-gray-700" })
+                )
+            );
+        };
+
+        const LoginScreen = ({ onLogin }) => {
+            return React.createElement('div', { className: "h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-indigo-50 to-pink-50 animate-in fade-in duration-500" },
+                React.createElement('div', { className: "bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-xl max-w-sm w-full text-center border border-white/50" },
+                    React.createElement('div', { className: "w-20 h-20 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-indigo-600 shadow-inner" },
+                        React.createElement(Radio, { size: 40 })
+                    ),
+                    React.createElement('h1', { className: "text-3xl font-bold text-gray-800 mb-2 tracking-tight" }, "M&B Play"),
+                    React.createElement('p', { className: "text-base text-gray-500 mb-8 font-medium" }, "Construyendo nuestro Soundtrack"),
+                    
+                    React.createElement('p', { className: "mb-4 text-gray-400 font-bold uppercase text-xs tracking-widest" }, "¿Quién eres?"),
+                    React.createElement('div', { className: "space-y-3" },
+                        React.createElement('button', { 
+                            onClick: () => onLogin(PLAYERS.player_1.id), 
+                            className: "w-full p-4 rounded-xl border-2 border-pink-100 bg-pink-50/50 text-pink-700 font-bold text-lg active:scale-95 transition-transform touch-manipulation",
+                            style: { WebkitTapHighlightColor: 'transparent' }
+                        }, "Maga"),
+                        React.createElement('button', { 
+                            onClick: () => onLogin(PLAYERS.player_2.id), 
+                            className: "w-full p-4 rounded-xl border-2 border-blue-100 bg-blue-50/50 text-blue-700 font-bold text-lg active:scale-95 transition-transform touch-manipulation",
+                            style: { WebkitTapHighlightColor: 'transparent' }
+                        }, "Beto")
+                    )
+                )
+            );
+        };
+
+        const HomeScreen = ({ entry, themes, setScreen, userRole, onLogout }) => {
+            const player = PLAYERS[userRole];
+            if (!player) return React.createElement('div', null, "Error: Usuario no válido.");
+
+            const myData = entry?.players?.[userRole] || {};
+            const otherRole = userRole === 'player_1' ? 'player_2' : 'player_1';
+            const otherData = entry?.players?.[otherRole] || {};
+            
+            const myTheme = myData.theme_name;
+            const otherTheme = otherData.theme_name;
+
+            return React.createElement('div', { className: "p-5 space-y-6 pb-32" },
+                React.createElement('header', { className: "flex items-center justify-between pt-2" },
+                    React.createElement('div', null,
+                        React.createElement('h1', { className: "text-3xl font-bold text-gray-900 tracking-tight" }, `Hola, ${player.name}`),
+                        React.createElement('p', { className: "text-gray-500 font-medium" }, "Sintonizando...")
+                    ),
+                    React.createElement('div', { className: "w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-indigo-600" },
+                        React.createElement(Radio, { size: 24 })
+                    )
+                ),
+
+                React.createElement('div', { className: "bg-white rounded-3xl shadow-xl shadow-indigo-100/50 border border-indigo-50 overflow-hidden relative" },
+                    React.createElement('div', { className: "absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-pink-400" }),
+                    React.createElement('div', { className: "bg-indigo-50/50 p-4 flex justify-between items-center border-b border-indigo-50" },
+                        React.createElement('span', { className: "font-bold text-indigo-900 flex items-center gap-2" }, React.createElement(Calendar, { size: 18, className: "text-indigo-500" }), " Hoy")
+                    ),
+                    React.createElement('div', { className: "p-6 flex flex-col items-center text-center" },
+                        myTheme ? React.createElement(React.Fragment, null,
+                            React.createElement('p', { className: "text-gray-400 text-xs uppercase tracking-wider font-bold mb-2" }, "Tu Temática"),
+                            React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-5 leading-tight" }, `"${myTheme}"`),
+                            React.createElement('div', { className: "mb-6 w-full bg-gray-50 rounded-xl p-4 border border-gray-100 flex items-center justify-center gap-3 text-sm" },
+                                React.createElement('div', { className: `w-3 h-3 rounded-full ${otherTheme ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-gray-300'}` }),
+                                otherTheme ? 
+                                    React.createElement('span', { className: "text-gray-700" }, `${PLAYERS[otherRole].name} eligió: `, React.createElement('strong', { className: "text-gray-900" }, otherTheme)) :
+                                    React.createElement('span', { className: "text-gray-400 italic" }, `${PLAYERS[otherRole].name} aún no elige temática`)
+                            ),
+                            React.createElement(Button, { onClick: () => setScreen('today'), className: "w-full py-4 text-lg shadow-lg shadow-indigo-200" }, myData.song_title ? 'Ver Tablero' : 'Añadir mi canción')
+                        ) : React.createElement('div', { className: "py-2 w-full" },
+                            React.createElement('div', { className: "mb-6" },
+                                React.createElement('div', { className: "w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-500 animate-pulse" }, React.createElement(Sparkles, { size: 36 })),
+                                React.createElement('h3', { className: "text-xl font-bold text-gray-900 mb-2" }, "¿Cuál es tu vibe hoy?"),
+                                React.createElement('p', { className: "text-gray-500" }, "Elige una temática para tu canción.")
+                            ),
+                            React.createElement(Button, { onClick: () => setScreen('themes'), variant: "primary", className: "w-full mb-4 py-4 text-lg" }, "Elegir mi Temática"),
+                            otherTheme && React.createElement('p', { className: "text-xs text-indigo-400 font-medium mt-2 bg-indigo-50 inline-block px-3 py-1 rounded-full" }, `Nota: ${PLAYERS[otherRole].name} ya eligió "${otherTheme}"`)
+                        )
+                    )
+                ),
+
+                React.createElement('div', { className: "bg-white p-5 rounded-2xl shadow-sm border border-red-100 mt-4" },
+                    React.createElement('h3', { className: "text-xs font-bold text-red-400 uppercase mb-4 tracking-wider" }, "Zona de Usuario"),
+                    React.createElement(Button, { onClick: onLogout, variant: "danger", className: "w-full py-4" }, React.createElement(LogOut, { size: 20 }), ` Salir como ${player.name}`)
+                ),
+                
+                React.createElement('div', { className: "py-6 opacity-60" },
+                    React.createElement('p', { className: "text-center text-gray-400 text-xs font-medium uppercase tracking-widest" }, "Construyendo nuestro Soundtrack")
+                )
+            );
+        };
+
+        const TodayScreen = ({ entry, userRole, onUpdateEntry }) => {
+            const [localSong, setLocalSong] = useState('');
+            const [localArtist, setLocalArtist] = useState('');
+            const [localComment, setLocalComment] = useState('');
+            
+            const otherRole = userRole === 'player_1' ? 'player_2' : 'player_1';
+            if (!PLAYERS[userRole] || !PLAYERS[otherRole]) return null;
+
+            const myData = entry?.players?.[userRole] || {};
+            const otherData = entry?.players?.[otherRole] || {};
+            const isSubmitted = (myData.status === 'enviado' || myData.status === 'escuchado') && myData.song_title;
+
+            useEffect(() => {
+                if (myData) {
+                    setLocalSong(myData.song_title || '');
+                    setLocalArtist(myData.artist || '');
+                    setLocalComment(myData.comment || '');
+                }
+            }, [entry]); 
+
+            const handleSubmit = () => {
+                if (!localSong || !localArtist) return;
+                // Construir enlace de búsqueda Spotify
+                const spotifyLink = `https://open.spotify.com/search/${encodeURIComponent(localSong + " " + localArtist)}`;
+                
+                onUpdateEntry({
+                    [`players.${userRole}.song_title`]: localSong,
+                    [`players.${userRole}.artist`]: localArtist,
+                    [`players.${userRole}.comment`]: localComment,
+                    [`players.${userRole}.status`]: 'enviado',
+                    [`players.${userRole}.spotify_link`]: spotifyLink // Guardamos el enlace
+                });
+            };
+
+            const handleReaction = (emoji) => {
+                onUpdateEntry({
+                    [`players.${userRole}.reaction_emoji`]: emoji,
+                    [`players.${userRole}.status`]: 'escuchado' 
+                });
+            };
+
+            const handleSongSelect = (item) => {
+                if (item.artist) setLocalArtist(item.artist);
+            };
+
+            if (!myData.theme_name) return React.createElement('div', { className: "p-8 text-center text-gray-500" }, "Primero selecciona tu temática.");
+
+            return React.createElement('div', { className: "p-5 space-y-6 pb-32" },
+                React.createElement('div', { className: `p-6 rounded-3xl border-2 ${PLAYERS[userRole].border} ${PLAYERS[userRole].bg} shadow-sm relative` },
+                    React.createElement('div', { className: "mb-5" },
+                        React.createElement('h3', { className: `font-bold text-lg flex items-center gap-2 ${PLAYERS[userRole].color} mb-3` }, React.createElement(User, { size: 20 }), " Tu Turno"),
+                        React.createElement('div', { className: "bg-white/70 p-4 rounded-2xl border border-white/60 text-center shadow-sm" },
+                            React.createElement('span', { className: "text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block" }, "Temática"),
+                            React.createElement('span', { className: "text-xl font-bold text-gray-800 leading-tight" }, myData.theme_name)
+                        )
+                    ),
+                    !isSubmitted ? React.createElement('div', { className: "space-y-4" },
+                        React.createElement(PredictiveInput, { label: "Canción", value: localSong, onChange: setLocalSong, onSelect: handleSongSelect, placeholder: "", type: "song" }),
+                        React.createElement(PredictiveInput, { label: "Artista", value: localArtist, onChange: setLocalArtist, placeholder: "", type: "artist" }),
+                        React.createElement('div', { className: "mb-2" },
+                            React.createElement('label', { className: "block text-xs font-bold text-gray-500 uppercase mb-1 ml-1" }, "Comentario"),
+                            React.createElement('textarea', {
+                                value: localComment, onChange: (e) => setLocalComment(e.target.value),
+                                className: "w-full p-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-base shadow-sm min-h-[80px]",
+                                rows: "2", placeholder: ""
+                            })
+                        ),
+                        React.createElement(Button, { onClick: handleSubmit, className: "w-full py-4 text-lg shadow-md mt-2" }, "Enviar Canción")
+                    ) : React.createElement('div', { className: "text-center py-6 relative" },
+                        React.createElement('div', { className: "w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-4 text-green-500 shadow-md" }, React.createElement(CheckCircle2, { size: 32 })),
+                        React.createElement('h4', { className: "font-bold text-gray-800 text-xl mb-1" }, localSong),
+                        React.createElement('p', { className: "text-gray-600 font-medium" }, localArtist),
+                        myData.spotify_link && React.createElement('a', { 
+                            href: myData.spotify_link, target: "_blank", rel: "noopener noreferrer",
+                            className: "inline-flex items-center gap-2 mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md transition-colors"
+                        }, React.createElement(ExternalLink, { size: 14 }), "Abrir en Spotify"),
+                        localComment && React.createElement('p', { className: "mt-4 text-sm text-gray-500 italic bg-white/50 p-3 rounded-lg inline-block" }, `"${localComment}"`),
+                        React.createElement('button', { onClick: () => onUpdateEntry({[`players.${userRole}.status`]: 'pendiente'}), className: "block w-full mt-6 text-xs text-gray-400 font-bold uppercase tracking-widest underline p-2" }, "Editar envío"),
+                        otherData.reaction_emoji && React.createElement('div', { className: "absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-lg border border-gray-100 text-3xl animate-bounce-slow", style: { animationDuration: '3s' } }, otherData.reaction_emoji)
+                    )
+                ),
+
+                React.createElement('div', { className: `p-6 rounded-3xl border-2 ${PLAYERS[otherRole].border} bg-white shadow-sm relative` },
+                    React.createElement('div', { className: "mb-5" },
+                        React.createElement('h3', { className: `font-bold text-lg flex items-center gap-2 ${PLAYERS[otherRole].color} mb-3` }, React.createElement(Headphones, { size: 20 }), ` ${PLAYERS[otherRole].name}`),
+                        otherData.theme_name ? React.createElement('div', { className: "bg-gray-50 p-3 rounded-xl border border-gray-100 text-center" },
+                            React.createElement('span', { className: "text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block" }, "Temática"),
+                            React.createElement('span', { className: "text-base font-bold text-gray-700 leading-tight" }, otherData.theme_name)
+                        ) : React.createElement('div', { className: "bg-gray-50 p-3 rounded-xl border border-gray-100 text-center opacity-60" },
+                            React.createElement('span', { className: "text-sm text-gray-500 font-medium" }, "Sin temática aún")
+                        )
+                    ),
+                    (otherData.status === 'enviado' || otherData.status === 'escuchado') ? React.createElement('div', { className: "text-center pb-12" },
+                        React.createElement('h4', { className: "font-bold text-gray-800 text-xl mb-1" }, otherData.song_title),
+                        React.createElement('p', { className: "text-gray-600 font-medium mb-4" }, otherData.artist),
+                        otherData.spotify_link && React.createElement('a', { 
+                            href: otherData.spotify_link, target: "_blank", rel: "noopener noreferrer",
+                            className: "inline-flex items-center gap-2 mb-6 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md transition-colors"
+                        }, React.createElement(ExternalLink, { size: 14 }), "Abrir en Spotify"),
+                        otherData.comment && React.createElement('div', { className: "bg-gray-50 p-4 rounded-2xl mb-2 text-sm text-gray-600 italic relative text-left inline-block w-full" },
+                            React.createElement('span', { className: "text-2xl text-gray-300 absolute -top-2 left-2 font-serif" }, "“"),
+                            React.createElement('p', { className: "pl-2 relative z-10" }, otherData.comment),
+                            myData.reaction_emoji && React.createElement('div', { className: "absolute -bottom-4 -right-2 bg-white border border-gray-100 rounded-full px-2 py-1 shadow-md text-xl z-20 transition-all transform scale-100" }, myData.reaction_emoji)
+                        ),
+                        !otherData.comment && myData.reaction_emoji && React.createElement('div', { className: "absolute bottom-16 right-6 bg-white border border-gray-100 rounded-full px-2 py-1 shadow-md text-xl z-20" }, myData.reaction_emoji),
+                        React.createElement('div', { className: "absolute bottom-4 left-0 w-full flex justify-center" },
+                            React.createElement('div', { className: "bg-white/90 backdrop-blur border border-gray-200 rounded-full shadow-lg px-3 py-2 flex gap-2 items-center overflow-x-auto max-w-[90%] scrollbar-hide" },
+                                React.createElement('span', { className: "text-gray-300 mr-1" }, React.createElement(SmilePlus, { size: 16 })),
+                                EMOJIS.map(emoji => React.createElement('button', {
+                                    key: emoji,
+                                    onClick: () => handleReaction(emoji),
+                                    className: `text-2xl p-1.5 rounded-full transition-all active:scale-90 hover:bg-gray-100 ${myData.reaction_emoji === emoji ? 'bg-indigo-100 scale-110' : ''}`,
+                                    style: { WebkitTapHighlightColor: 'transparent' }
+                                }, emoji))
+                            )
+                        )
+                    ) : React.createElement('div', { className: "text-center py-10 text-gray-400 flex flex-col items-center" },
+                        React.createElement(Loader2, { className: "loader mb-4 border-4 w-8 h-8 text-indigo-200" }),
+                        React.createElement('p', { className: "font-medium" }, `Esperando a ${PLAYERS[otherRole].name}...`)
+                    )
+                )
+            );
+        };
+
+        const ThemesScreen = ({ themes, onSelectTheme, onAddTheme, onToggleTheme, userRole }) => {
+            const [newTheme, setNewTheme] = useState('');
+            const player = PLAYERS[userRole];
+            const handleAdd = () => {
+                if(!newTheme.trim()) return;
+                onAddTheme(newTheme);
+                setNewTheme('');
+            };
+
+            return React.createElement('div', { className: "p-5 space-y-6 pb-32" },
+                React.createElement('header', null,
+                    React.createElement('h2', { className: "text-2xl font-bold text-gray-900" }, "Elige TU temática"),
+                    React.createElement('p', { className: "text-sm text-gray-500 font-medium" }, "¿Cuál es el vibe de hoy?")
+                ),
+                React.createElement('div', { className: "bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-6" },
+                    React.createElement('h3', { className: "text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider" }, "Selección Rápida"),
+                    React.createElement('div', { className: "grid grid-cols-1 gap-3" },
+                        React.createElement(Button, { onClick: () => onSelectTheme(null, true), className: "w-full py-5 bg-gradient-to-r from-pink-500 to-indigo-500 border-none shadow-lg shadow-indigo-200 text-lg" }, React.createElement(Shuffle, { size: 22 }), " ¡Sorpréndeme!")
+                    )
+                ),
+                React.createElement('div', { className: "bg-white p-5 rounded-2xl shadow-sm border border-gray-200" },
+                    React.createElement('h3', { className: "text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider" }, "Crear Nueva"),
+                    React.createElement('div', { className: "flex gap-3" },
+                        React.createElement('input', { type: "text", value: newTheme, onChange: (e) => setNewTheme(e.target.value), className: "flex-1 p-3 rounded-xl border border-gray-300 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-base", placeholder: "Ej. Lluvia en Madrid" }),
+                        React.createElement(Button, { onClick: handleAdd, className: "py-3 px-4" }, React.createElement(Save, { size: 20 }))
+                    )
+                ),
+                React.createElement('div', { className: "space-y-3" },
+                    React.createElement('h3', { className: "text-xs font-bold text-gray-400 uppercase mt-4 mb-2 tracking-wider" }, "Biblioteca de Temas"),
+                    React.createElement('div', { className: "flex items-center justify-between px-3 mb-2" },
+                        React.createElement('div', { className: "flex-1" }),
+                        React.createElement('div', { className: "flex items-center gap-3" },
+                            React.createElement('div', { className: "w-8 text-center text-[10px] font-bold text-pink-400 uppercase tracking-widest" }, "Maga"),
+                            React.createElement('div', { className: "w-8 text-center text-[10px] font-bold text-blue-400 uppercase tracking-widest" }, "Beto")
+                        )
+                    ),
+                    themes.map(theme => React.createElement('div', { key: theme.id, className: `p-3 rounded-xl flex items-center justify-between border transition-colors ${theme.active ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100 opacity-60'}` },
+                        React.createElement('div', { className: "flex-1 pr-2" },
+                            React.createElement('p', { className: `font-medium text-sm ${theme.active ? 'text-gray-800' : 'text-gray-400 line-through'}` }, theme.name),
+                            React.createElement('button', { onClick: () => onSelectTheme(theme), className: "text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100 active:scale-95 transition-transform mt-2" }, "Elegir")
+                        ),
+                        React.createElement('div', { className: "flex items-center gap-3" },
+                            React.createElement('div', { className: `w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${PLAYERS.player_1.countColor}` }, theme.usage_player_1 || 0),
+                            React.createElement('div', { className: `w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${PLAYERS.player_2.countColor}` }, theme.usage_player_2 || 0)
+                        )
+                    ))
+                )
+            );
+        };
+
+        const StatsScreen = ({ userId }) => {
+            const [stats, setStats] = useState(null);
+            const [history, setHistory] = useState([]);
+
+            useEffect(() => {
+                if (!userId) return;
+                const q = query(collection(db, 'daily_entries'));
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+                    let totalMaga = 0, totalBeto = 0, hits = [], artists = {}, emojiStats = {};
+
+                    data.forEach(d => {
+                        const p1 = d.players?.player_1, p2 = d.players?.player_2;
+                        if (p1?.song_title && (p1.status === 'enviado' || p1.status === 'escuchado')) totalMaga++;
+                        if (p2?.song_title && (p2.status === 'enviado' || p2.status === 'escuchado')) totalBeto++;
+                        
+                        if (p1?.reaction_emoji) {
+                            if (!emojiStats[p1.reaction_emoji]) emojiStats[p1.reaction_emoji] = { p1: 0, p2: 0 };
+                            emojiStats[p1.reaction_emoji].p1++;
+                        }
+                        if (p2?.reaction_emoji) {
+                            if (!emojiStats[p2.reaction_emoji]) emojiStats[p2.reaction_emoji] = { p1: 0, p2: 0 };
+                            emojiStats[p2.reaction_emoji].p2++;
+                        }
+
+                        [p1, p2].forEach(p => {
+                            if (p?.artist) {
+                                const normArtist = p.artist.trim().toLowerCase();
+                                if (!artists[normArtist]) artists[normArtist] = { count: 0, name: p.artist.trim() };
+                                artists[normArtist].count++;
+                            }
+                        });
+                    });
+
+                    const chartData = Object.entries(emojiStats).map(([emoji, counts]) => ({ emoji, p1: counts.p1, p2: counts.p2, total: counts.p1 + counts.p2 })).sort((a, b) => b.total - a.total).slice(0, 6);
+                    const maxTotal = Math.max(...chartData.map(d => d.total), 1);
+                    
+                    let topArtist = "Varios";
+                    let maxArtistCount = 0;
+                    Object.values(artists).forEach(obj => { if (obj.count > maxArtistCount) { maxArtistCount = obj.count; topArtist = obj.name; }});
+
+                    const sortedHistory = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setHistory(sortedHistory);
+                    setStats({ totalMaga, totalBeto, chartData, maxTotal, hits: hits.reverse().slice(0, 20), topArtist });
+                });
+                return () => unsubscribe();
+            }, [userId]);
+
+            if (!stats) return React.createElement('div', { className: "p-8 text-center flex justify-center" }, React.createElement(Loader2, { className: "loader border-4 w-8 h-8 text-indigo-300" }));
+
+            return React.createElement('div', { className: "p-5 space-y-5 pb-32" },
+                React.createElement('h2', { className: "text-2xl font-bold text-gray-900" }, "Resumen Histórico"),
+                React.createElement('div', { className: "grid grid-cols-2 gap-4" },
+                    React.createElement('div', { className: "flex flex-col gap-2 h-full" },
+                        React.createElement('div', { className: "bg-gradient-to-r from-pink-100 to-pink-50 text-pink-700 p-4 rounded-2xl flex-1 flex flex-col justify-center shadow-sm border border-pink-100" },
+                            React.createElement('p', { className: "text-[10px] font-bold uppercase tracking-widest opacity-70" }, "Maga"),
+                            React.createElement('p', { className: "text-2xl font-bold" }, stats.totalMaga)
+                        ),
+                        React.createElement('div', { className: "bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 p-4 rounded-2xl flex-1 flex flex-col justify-center shadow-sm border border-blue-100" },
+                            React.createElement('p', { className: "text-[10px] font-bold uppercase tracking-widest opacity-70" }, "Beto"),
+                            React.createElement('p', { className: "text-2xl font-bold" }, stats.totalBeto)
+                        )
+                    ),
+                    React.createElement('div', { className: "bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-5 rounded-3xl shadow-lg shadow-indigo-200 flex flex-col justify-between relative overflow-hidden" },
+                        React.createElement(Mic2, { size: 60, className: "text-white/10 absolute -bottom-4 -right-4" }),
+                        React.createElement('p', { className: "text-indigo-100 text-xs font-bold uppercase tracking-widest" }, "Artista Top"),
+                        React.createElement('p', { className: "text-xl font-bold mt-1 truncate leading-tight z-10" }, stats.topArtist)
+                    )
+                ),
+                React.createElement('div', { className: "bg-white p-6 rounded-3xl shadow-lg border border-gray-100" },
+                    React.createElement('h3', { className: "font-bold text-gray-700 mb-6 flex items-center gap-2" }, React.createElement(Sparkles, { size: 18, className: "text-yellow-500 fill-current" }), " Vibe Check"),
+                    React.createElement('div', { className: "h-48 flex items-end justify-between gap-2 sm:gap-4" },
+                        stats.chartData.length === 0 ? React.createElement('p', { className: "w-full text-center text-gray-400 text-sm py-10" }, "Aún no hay reacciones.") :
+                        stats.chartData.map((data, idx) => {
+                            const totalHeightPct = (data.total / stats.maxTotal) * 100;
+                            const p1Pct = (data.p1 / data.total) * 100;
+                            const p2Pct = (data.p2 / data.total) * 100;
+                            return React.createElement('div', { key: idx, className: "flex flex-col items-center flex-1 h-full justify-end group" },
+                                React.createElement('div', { className: "mb-1 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-gray-500 bg-gray-100 px-1 rounded absolute -mt-6" }, data.total),
+                                React.createElement('div', { className: "w-full max-w-[30px] rounded-t-lg overflow-hidden flex flex-col-reverse relative transition-all hover:scale-105", style: { height: `${totalHeightPct}%` } },
+                                    React.createElement('div', { style: { height: `${p1Pct}%` }, className: `${PLAYERS.player_1.barColor} w-full transition-all` }),
+                                    React.createElement('div', { style: { height: `${p2Pct}%` }, className: `${PLAYERS.player_2.barColor} w-full transition-all border-b border-white/20` })
+                                ),
+                                React.createElement('div', { className: "mt-2 text-xl" }, data.emoji)
+                            );
+                        })
+                    ),
+                    stats.chartData.length > 0 && React.createElement('div', { className: "flex justify-center gap-4 mt-4 text-[10px] uppercase font-bold text-gray-400 tracking-widest" },
+                        React.createElement('div', { className: "flex items-center gap-1" }, React.createElement('div', { className: `w-2 h-2 rounded-full ${PLAYERS.player_2.barColor}` }), " Beto"),
+                        React.createElement('div', { className: "flex items-center gap-1" }, React.createElement('div', { className: `w-2 h-2 rounded-full ${PLAYERS.player_1.barColor}` }), " Maga")
+                    )
+                ),
+                React.createElement('div', null,
+                    React.createElement('h3', { className: "font-bold text-gray-700 mb-4 flex items-center gap-2" }, React.createElement(Clock, { size: 18, className: "text-gray-500" }), " Historial Completo"),
+                    React.createElement('div', { className: "space-y-4" },
+                        history.map(day => {
+                            const p1 = day.players?.player_1 || {};
+                            const p2 = day.players?.player_2 || {};
+                            const legacyGlobalTheme = day.theme_name;
+                            return React.createElement('div', { key: day.id, className: "bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden" },
+                                React.createElement('div', { className: "bg-gray-50/80 p-3 border-b border-gray-100 flex justify-between items-center" },
+                                    React.createElement('span', { className: "text-xs font-bold text-gray-500" }, day.date),
+                                    legacyGlobalTheme && React.createElement('span', { className: "text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-bold truncate max-w-[150px]" }, legacyGlobalTheme)
+                                ),
+                                React.createElement('div', { className: "p-4 grid grid-cols-2 divide-x divide-gray-100" },
+                                    React.createElement('div', { className: "pr-3" },
+                                        React.createElement('div', { className: "flex items-center gap-1 mb-1.5" },
+                                            React.createElement('p', { className: "text-xs font-extrabold text-pink-600 uppercase tracking-wider" }, "Maga"),
+                                            p1.reaction_emoji && React.createElement('span', { className: "text-base" }, p1.reaction_emoji)
+                                        ),
+                                        p1.theme_name && React.createElement('p', { className: "text-[10px] text-gray-400 uppercase font-bold truncate mb-1" }, p1.theme_name),
+                                        React.createElement('p', { className: "text-sm font-bold text-gray-800 truncate leading-snug" }, p1.song_title || '-'),
+                                        React.createElement('p', { className: "text-xs text-gray-500 truncate" }, p1.artist),
+                                        p1.spotify_link && React.createElement('a', { href: p1.spotify_link, target: "_blank", rel: "noopener noreferrer", className: "inline-flex mt-1 text-green-500 hover:text-green-600" }, React.createElement(ExternalLink, { size: 12 }))
+                                    ),
+                                    React.createElement('div', { className: "pl-3" },
+                                        React.createElement('div', { className: "flex items-center gap-1 mb-1.5" },
+                                            React.createElement('p', { className: "text-xs font-extrabold text-blue-600 uppercase tracking-wider" }, "Beto"),
+                                            p2.reaction_emoji && React.createElement('span', { className: "text-base" }, p2.reaction_emoji)
+                                        ),
+                                        p2.theme_name && React.createElement('p', { className: "text-[10px] text-gray-400 uppercase font-bold truncate mb-1" }, p2.theme_name),
+                                        React.createElement('p', { className: "text-sm font-bold text-gray-800 truncate leading-snug" }, p2.song_title || '-'),
+                                        React.createElement('p', { className: "text-xs text-gray-500 truncate" }, p2.artist),
+                                        p2.spotify_link && React.createElement('a', { href: p2.spotify_link, target: "_blank", rel: "noopener noreferrer", className: "inline-flex mt-1 text-green-500 hover:text-green-600" }, React.createElement(ExternalLink, { size: 12 }))
+                                    )
+                                )
+                            );
+                        })
+                    )
+                )
+            );
+        };
+
+        const AppWithData = () => {
+             const [authUser, setAuthUser] = useState(null);
+             const [userRole, setUserRole] = useState(() => localStorage.getItem('maga_beto_role'));
+             const [currentScreen, setCurrentScreen] = useState('home');
+             
+             const [themes, setThemes] = useState([]);
+             const [todayEntry, setTodayEntry] = useState(null);
+
+             useEffect(() => {
+                const init = async () => {
+                    await signInAnonymously(auth);
+                };
+                init();
+                onAuthStateChanged(auth, setAuthUser);
+            }, []);
+
+            useEffect(() => {
+                if (!authUser) return;
+
+                const themesQuery = query(collection(db, 'themes'));
+                const unsubThemes = onSnapshot(themesQuery, (snap) => {
+                    const list = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    setThemes(list);
+                    if(list.length === 0) {
+                        DEFAULT_THEMES.forEach(name => addDoc(collection(db, 'themes'), {name, active: true}));
+                    }
+                });
+
+                const todayId = getTodayString();
+                const todayRef = doc(db, 'daily_entries', todayId);
+                const unsubToday = onSnapshot(todayRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        setTodayEntry({id: docSnap.id, ...docSnap.data()});
+                    } else {
+                        setTodayEntry(null);
+                    }
+                });
+
+                return () => {
+                    unsubThemes();
+                    unsubToday();
+                };
+            }, [authUser]);
+
+            const handleSelectTheme = async (theme, isRandom = false) => {
+                const todayId = getTodayString();
+                let selectedTheme = theme;
+                if (isRandom) {
+                    const activeThemes = themes.filter(t => t.active);
+                    if(activeThemes.length === 0) return;
+                    selectedTheme = activeThemes[Math.floor(Math.random() * activeThemes.length)];
+                }
+                await setDoc(doc(db, 'daily_entries', todayId), {
+                    date: todayId,
+                    players: {
+                        [userRole]: { theme_id: selectedTheme.id, theme_name: selectedTheme.name, status: 'pendiente' }
+                    }
+                }, { merge: true });
+
+                if(selectedTheme.id) {
+                    const themeRef = doc(db, 'themes', selectedTheme.id);
+                    await updateDoc(themeRef, { [`usage_${userRole}`]: increment(1) });
+                }
+                setCurrentScreen('today');
+            };
+            
+            const handleAddTheme = async (name) => {
+                await addDoc(collection(db, 'themes'), { name, active: true });
+            };
+
+            const handleToggleTheme = async (id, newState) => {
+                await updateDoc(doc(db, 'themes', id), { active: newState });
+            };
+
+            const handleUpdateEntry = async (updates) => {
+                const todayId = getTodayString();
+                await updateDoc(doc(db, 'daily_entries', todayId), updates);
+            };
+
+            if (!userRole) return React.createElement(LoginScreen, { onLogin: (role) => { setUserRole(role); localStorage.setItem('maga_beto_role', role); } });
+
+            return React.createElement('div', { className: "h-[100dvh] w-full bg-[#f8fafc] text-gray-800 font-sans fixed inset-0 overflow-hidden flex flex-col" },
+                React.createElement(InstallPrompt),
+                React.createElement('div', { className: "flex-1 overflow-y-auto scrollbar-hide overscroll-contain", style: { WebkitOverflowScrolling: 'touch' } },
+                    React.createElement('div', { className: "max-w-md mx-auto min-h-full bg-white/50 sm:shadow-2xl sm:border-x sm:border-gray-100" },
+                       currentScreen === 'home' ? React.createElement(HomeScreen, { entry: todayEntry, themes, userRole, setScreen: setCurrentScreen, onLogout: () => { setUserRole(null); localStorage.removeItem('maga_beto_role'); } }) :
+                       currentScreen === 'today' ? React.createElement(TodayScreen, { entry: todayEntry, userRole, onUpdateEntry: handleUpdateEntry }) :
+                       currentScreen === 'themes' ? React.createElement(ThemesScreen, { themes, onSelectTheme: handleSelectTheme, onAddTheme: handleAddTheme, onToggleTheme: handleToggleTheme, userRole }) :
+                       React.createElement(StatsScreen, { userId: authUser?.uid })
+                    )
+                ),
+                React.createElement('nav', { className: "bg-white/90 backdrop-blur-md border-t border-gray-200 flex justify-around py-3 px-4 z-50 pb-[env(safe-area-inset-bottom,20px)] sm:pb-3 max-w-md mx-auto w-full shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" },
+                    ['home', 'today', 'themes', 'stats'].map(screen => 
+                        React.createElement('button', { 
+                            key: screen,
+                            onClick: () => setCurrentScreen(screen),
+                            className: `flex flex-col items-center gap-1 active:scale-90 transition-transform p-2 rounded-xl ${currentScreen === screen ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`
+                        }, 
+                        React.createElement(screen === 'home' ? Radio : screen === 'today' ? Music : screen === 'themes' ? Library : BarChart3, { size: 22, strokeWidth: currentScreen === screen ? 2.5 : 2 }),
+                        React.createElement('span', { className: "text-[10px] font-bold tracking-wide uppercase" }, screen === 'stats' ? 'Resumen' : screen === 'home' ? 'Inicio' : screen === 'today' ? 'Hoy' : 'Temas')
+                        )
+                    )
+                )
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(React.createElement(AppWithData));
+    </script>
+</body>
+</html>
