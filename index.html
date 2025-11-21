@@ -7,22 +7,20 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="M&B Play">
     
-    <!-- ICONO PERSONALIZADO "MB" -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%234F46E5'/%3E%3Ctext x='50%25' y='50%25' dy='.1em' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='256' font-weight='bold' fill='white'%3EMB%3C/text%3E%3C/svg%3E">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%234F46E5'/%3E%3Ctext x='50%25' y='50%25' dy='.1em' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='256' font-weight='bold' fill='white'%3EMB%3C/text%3E%3C/svg%3E">
+    <!-- ICONO PERSONALIZADO (ONDAS DE AUDIO) PARA HOMESCREEN -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%234F46E5'/%3E%3Cpath fill='white' d='M144 368c-8.8 0-16-7.2-16-16V160c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16h-32zm112 64c-8.8 0-16-7.2-16-16V96c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v320c0 8.8-7.2 16-16 16h-32zm112-96c-8.8 0-16-7.2-16-16V192c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v128c0 8.8-7.2 16-16 16h-32z'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%234F46E5'/%3E%3Cpath fill='white' d='M144 368c-8.8 0-16-7.2-16-16V160c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v192c0 8.8-7.2 16-16 16h-32zm112 64c-8.8 0-16-7.2-16-16V96c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v320c0 8.8-7.2 16-16 16h-32zm112-96c-8.8 0-16-7.2-16-16V192c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v128c0 8.8-7.2 16-16 16h-32z'/%3E%3C/svg%3E">
 
-    <!-- FUENTES DE GOOGLE: Rampart One (Título) & Quicksand (Cuerpo) -->
+    <!-- FUENTES DE GOOGLE: Rampart One, Quicksand y Material Symbols -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rampart+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
-    <!-- Usamos la importación estándar sin filtros para asegurar compatibilidad total -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=edit_audio" />
 
     <title>M&B Play</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- CONFIGURACIÓN TAILWIND PARA FUENTES -->
     <script>
         tailwind.config = {
             theme: {
@@ -48,10 +46,9 @@
     <style>
         body { overscroll-behavior-y: none; }
         .ptr-element { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        /* Clase helper para asegurar que el icono se vea bien */
         .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            vertical-align: middle;
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+          color: inherit;
         }
     </style>
 </head>
@@ -90,10 +87,10 @@
             where,
             increment,
             writeBatch,
-            deleteField // IMPORTANTE: Necesario para borrar campos
+            deleteField // IMPORTANTE: Se añadió deleteField
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // --- TU CONFIGURACIÓN REAL DE FIREBASE ---
+        // --- TU CONFIGURACIÓN REAL ---
         const firebaseConfig = {
             apiKey: "AIzaSyBzbIz_VKis6nu1W7JWWeCSgLzBqJQ8HzY",
             authDomain: "magapp-19035.firebaseapp.com",
@@ -876,7 +873,7 @@
                     
                     const realCounts = {};
                     
-                    // 1. Contar uso real desde el historial (Solo si tiene canción)
+                    // 1. Contar uso real desde el historial
                     entriesSnap.docs.forEach(doc => {
                         const data = doc.data();
                         const p1 = data.players?.player_1;
