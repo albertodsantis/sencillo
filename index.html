@@ -23,7 +23,7 @@
     
     <script>
         tailwind.config = {
-            darkMode: 'class', // Habilitar modo oscuro manual
+            darkMode: 'class', 
             theme: {
                 extend: {
                     fontFamily: {
@@ -32,11 +32,11 @@
                     },
                     colors: {
                         dark: {
-                            bg: '#111827', // Gris muy oscuro (casi negro)
-                            card: '#1F2937', // Gris oscuro para tarjetas
-                            text: '#F3F4F6', // Blanco grisáceo
-                            textMuted: '#9CA3AF', // Gris medio
-                            border: '#374151' // Borde sutil
+                            bg: '#111827',
+                            card: '#1F2937', 
+                            text: '#F3F4F6', 
+                            textMuted: '#9CA3AF',
+                            border: '#374151' 
                         }
                     }
                 }
@@ -61,13 +61,8 @@
             vertical-align: middle;
         }
         /* Ocultar scrollbar pero permitir scroll */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans overflow-hidden dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
@@ -80,7 +75,7 @@
             Music, Heart, Radio, Calendar, BarChart3, Library, 
             Save, User, Shuffle, CheckCircle2, Clock, Headphones, 
             LogOut, Sparkles, SmilePlus, Mic2, Search, Loader2, 
-            Share, PlusSquare, X, ExternalLink, RefreshCw, BellRing, Wrench, Settings, AlertCircle, Trophy, Star, Moon, Sun, StickyNote
+            Share, PlusSquare, X, ExternalLink, RefreshCw, BellRing, Wrench, Settings, AlertCircle, Trophy, Star, Moon, Sun, StickyNote, Check, CheckCheck
         } from 'lucide-react';
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -109,7 +104,7 @@
             getDoc
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // --- TU CONFIGURACIÓN REAL DE FIREBASE ---
+        // --- CONFIGURACIÓN FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyBzbIz_VKis6nu1W7JWWeCSgLzBqJQ8HzY",
             authDomain: "magapp-19035.firebaseapp.com",
@@ -132,15 +127,12 @@
         const EMOJIS = ["💘", "🔥", "😂", "😭", "🥰", "🫠", "🤯", "💃", "😴", "🥴", "🤮", "🤡", "🥺", "😡", "🥶", "🥳", "👀", "💀", "💩", "🫶"];
 
         const DEFAULT_THEMES = [
-            "Celebrar tus pequeñas victorias", "Cocinar con ritmo", "Nostalgia bonita", "Caminar como si tuvieras una misión",
-            "Recordar tu infancia sin querer", "Entrenar", "Viajar mentalmente a otro país", "Manejar de noche",
-            "Que todos se saben", "Necesito bailar", "Con groove funky", "Liberar estrés acumulado",
-            "Antes de dormir", "Gritar en el coche", "Un domingo por la mañana", "Con vibe latina",
-            "Llorar", "Sentir que todo fluye", "Superar a tu ex", "Instrumental para concentrarte",
-            "Una noche melancólica mirando al techo", "Sentirte invencible", "Una noche tranquila", "Reírte un poco",
-            "Que te hace reír", "Desahogarte", "Dedicar a alguien que amas", "Cinematográfica",
-            "Empezar un día desde cero", "Acústica para relajarte", "Una noche de verano", "Bailar en la ducha sin vergüenza",
-            "Un momento íntimo", "Pensar en tu ex", "Sentirte poderoso", "Con piano que duele",
+            "Celebrar tus pequeñas victorias", "Cocinar con ritmo", "Nostalgia bonita", "Caminar como si tuvieras una misión", "Recordar tu infancia sin querer", 
+            "Entrenar", "Viajar mentalmente a otro país", "Manejar de noche", "Que todos se saben", "Necesito bailar", "Con groove funky", "Liberar estrés acumulado",
+            "Antes de dormir", "Gritar en el coche", "Un domingo por la mañana", "Con vibe latina", "Llorar", "Sentir que todo fluye", "Superar a tu ex", 
+            "Instrumental para concentrarte", "Una noche melancólica mirando al techo", "Sentirte invencible", "Una noche tranquila", "Reírte un poco",
+            "Que te hace reír", "Desahogarte", "Dedicar a alguien que amas", "Cinematográfica", "Empezar un día desde cero", "Acústica para relajarte", 
+            "Una noche de verano", "Bailar en la ducha sin vergüenza", "Un momento íntimo", "Pensar en tu ex", "Sentirte poderoso", "Con piano que duele",
             "Que te enamora aunque estés soltero", "Mejorar el estado de ánimo", "Un día de lluvia", "Sentir que eres el protagonista"
         ];
 
@@ -149,9 +141,8 @@
         // --- API MÚSICA ---
         const searchMusic = async (term, type = 'song') => {
             if (!term || term.length < 2) return [];
-            const entity = type === 'song' ? 'song' : 'musicArtist';
             try {
-                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=${entity}&limit=5`);
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=${type === 'song' ? 'song' : 'musicArtist'}&limit=5`);
                 if (!res.ok) return [];
                 const data = await res.json();
                 return data.results.map(item => ({
@@ -166,79 +157,46 @@
 
         // --- COMPONENTES UI ---
         const PullToRefresh = ({ children }) => {
-            const [startPoint, setStartPoint] = useState(0);
-            const [pullChange, setPullChange] = useState(0);
-            const [refreshing, setRefreshing] = useState(false);
-            const containerRef = useRef(null);
+             const [startPoint, setStartPoint] = useState(0);
+             const [pullChange, setPullChange] = useState(0);
+             const [refreshing, setRefreshing] = useState(false);
+             const containerRef = useRef(null);
 
-            const initLoading = () => {
-                setRefreshing(true);
-                setTimeout(() => {
-                    setRefreshing(false);
-                    setPullChange(0);
-                    window.location.reload();
-                }, 800);
-            };
+             const initLoading = () => {
+                 setRefreshing(true);
+                 setTimeout(() => { setRefreshing(false); setPullChange(0); window.location.reload(); }, 800);
+             };
+             const onTouchStart = (e) => { if (containerRef.current?.scrollTop === 0) setStartPoint(e.targetTouches[0].clientY); };
+             const onTouchMove = (e) => {
+                 if (!startPoint) return;
+                 const pullLength = e.targetTouches[0].clientY - startPoint;
+                 if (containerRef.current?.scrollTop === 0 && pullLength > 0) setPullChange(pullLength * 0.4);
+             };
+             const onTouchEnd = () => {
+                 if (!startPoint) return;
+                 if (pullChange > 70) initLoading(); else setPullChange(0);
+                 setStartPoint(0);
+             };
 
-            const onTouchStart = (e) => {
-                const scrollTop = containerRef.current?.scrollTop || 0;
-                if (scrollTop === 0) {
-                    setStartPoint(e.targetTouches[0].clientY);
-                }
-            };
-
-            const onTouchMove = (e) => {
-                if (!startPoint) return;
-                const scrollTop = containerRef.current?.scrollTop || 0;
-                const currentPoint = e.targetTouches[0].clientY;
-                const pullLength = currentPoint - startPoint;
-
-                if (scrollTop === 0 && pullLength > 0) {
-                    const resist = pullLength * 0.4; 
-                    setPullChange(resist);
-                }
-            };
-
-            const onTouchEnd = () => {
-                if (!startPoint) return;
-                if (pullChange > 70) { 
-                    initLoading();
-                } else {
-                    setPullChange(0);
-                }
-                setStartPoint(0);
-            };
-
-            return React.createElement('div', {
-                ref: containerRef,
-                className: "flex-1 overflow-y-auto scrollbar-hide relative h-full",
-                onTouchStart, onTouchMove, onTouchEnd,
-                style: { overscrollBehavior: 'contain' }
-            }, 
-                React.createElement('div', {
-                    className: "absolute top-0 left-0 w-full flex justify-center pointer-events-none z-20",
-                    style: { 
-                        transform: `translateY(${refreshing ? 20 + (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-top') || 0)) : pullChange - 50}px)`,
-                        opacity: refreshing ? 1 : Math.min(pullChange / 50, 1),
-                        transition: !startPoint ? 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s' : 'none'
-                    }
-                },
-                    React.createElement('div', { className: "bg-white dark:bg-dark-card p-2.5 rounded-full shadow-lg border border-indigo-100 dark:border-dark-border text-indigo-600 dark:text-indigo-400" },
-                        React.createElement(Loader2, { className: `animate-spin`, size: 22 })
-                    )
-                ),
-                React.createElement('div', {
-                    className: "min-h-full",
-                    style: { 
-                        transform: `translateY(${refreshing ? 60 : pullChange}px)`,
-                        transition: !startPoint ? 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
-                    }
-                }, children)
-            );
-        };
+             return React.createElement('div', {
+                 ref: containerRef,
+                 className: "flex-1 overflow-y-auto scrollbar-hide relative h-full",
+                 onTouchStart, onTouchMove, onTouchEnd,
+                 style: { overscrollBehavior: 'contain' }
+             }, 
+                 React.createElement('div', {
+                     className: "absolute top-0 left-0 w-full flex justify-center pointer-events-none z-20",
+                     style: { 
+                         transform: `translateY(${refreshing ? 20 + (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-area-top') || 0)) : pullChange - 50}px)`,
+                         opacity: refreshing ? 1 : Math.min(pullChange / 50, 1),
+                         transition: !startPoint ? 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s' : 'none'
+                     }
+                 }, React.createElement('div', { className: "bg-white p-2.5 rounded-full shadow-lg border border-indigo-100 text-indigo-600" }, React.createElement(Loader2, { className: `animate-spin`, size: 22 }))),
+                 React.createElement('div', { className: "min-h-full", style: { transform: `translateY(${refreshing ? 60 : pullChange}px)`, transition: !startPoint ? 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none' } }, children)
+             );
+         };
 
         const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
-            const baseStyle = "px-4 py-3 rounded-xl font-medium transition-transform active:scale-95 flex items-center justify-center gap-2 touch-manipulation select-none";
             const variants = {
                 primary: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-none",
                 secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 dark:bg-dark-card dark:text-dark-text dark:border-dark-border dark:hover:bg-gray-800",
@@ -246,11 +204,12 @@
                 ghost: "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800",
                 outline: "border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-400",
                 spotify: "bg-green-500 text-white hover:bg-green-600 shadow-md shadow-green-200 dark:shadow-none",
-                whatsapp: "bg-[#25D366] text-white hover:bg-[#20bd5a] shadow-md shadow-green-100 dark:shadow-none"
+                whatsapp: "bg-[#25D366] text-white hover:bg-[#20bd5a] shadow-md shadow-green-100 dark:shadow-none",
+                success: "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-200 dark:shadow-none" 
             };
             return React.createElement('button', { 
                 onClick, disabled, 
-                className: `${baseStyle} ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`,
+                className: `px-4 py-3 rounded-xl font-medium transition-transform active:scale-95 flex items-center justify-center gap-2 touch-manipulation select-none ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`,
                 style: { WebkitTapHighlightColor: 'transparent' }
             }, children);
         };
@@ -258,12 +217,10 @@
         const PredictiveInput = ({ label, value, onChange, onSelect, placeholder, type = 'song' }) => {
             const [suggestions, setSuggestions] = useState([]);
             const [loading, setLoading] = useState(false);
-            const [showSuggestions, setShowSuggestions] = useState(false);
             const wrapperRef = useRef(null);
-
             useEffect(() => {
                 const timer = setTimeout(async () => {
-                    if (value.length >= 2 && showSuggestions) {
+                    if (value.length >= 2) {
                         setLoading(true);
                         const results = await searchMusic(value, type);
                         setSuggestions(results);
@@ -271,31 +228,14 @@
                     } else { setSuggestions([]); }
                 }, 500);
                 return () => clearTimeout(timer);
-            }, [value, type, showSuggestions]);
-
-            useEffect(() => {
-                function handleClickOutside(event) {
-                    if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-                        setShowSuggestions(false);
-                    }
-                }
-                document.addEventListener("mousedown", handleClickOutside);
-                return () => document.removeEventListener("mousedown", handleClickOutside);
-            }, []);
-
-            const handleSelect = (item) => {
-                onChange(item.title);
-                setShowSuggestions(false);
-                if (onSelect) onSelect(item);
-            };
+            }, [value]);
 
             return React.createElement('div', { className: "mb-4 relative", ref: wrapperRef },
                 label && React.createElement('label', { className: "block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1" }, label),
                 React.createElement('div', { className: "relative" },
                     React.createElement('input', {
                         type: "text", value,
-                        onFocus: () => setShowSuggestions(true),
-                        onChange: (e) => { onChange(e.target.value); setShowSuggestions(true); },
+                        onChange: (e) => onChange(e.target.value),
                         placeholder,
                         className: "w-full p-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-white text-base shadow-sm dark:bg-dark-card dark:border-dark-border dark:text-white",
                         autoComplete: "off"
@@ -304,10 +244,10 @@
                         loading ? React.createElement(Loader2, { size: 20, className: "animate-spin text-indigo-500" }) : React.createElement(Search, { size: 20 })
                     )
                 ),
-                showSuggestions && suggestions.length > 0 && React.createElement('div', { className: "absolute z-50 w-full bg-white dark:bg-dark-card mt-1 rounded-xl shadow-xl border border-gray-100 dark:border-dark-border overflow-hidden max-h-60 overflow-y-auto" },
+                suggestions.length > 0 && React.createElement('div', { className: "absolute z-50 w-full bg-white dark:bg-dark-card mt-1 rounded-xl shadow-xl border border-gray-100 dark:border-dark-border overflow-hidden max-h-60 overflow-y-auto" },
                     suggestions.map((item, idx) => React.createElement('div', {
                         key: `${item.id}-${idx}`,
-                        onClick: () => handleSelect(item),
+                        onClick: () => { onChange(item.title); setSuggestions([]); if (onSelect) onSelect(item); },
                         className: "p-3 hover:bg-indigo-50 dark:hover:bg-gray-800 cursor-pointer border-b border-gray-50 dark:border-gray-800 last:border-0 transition-colors flex flex-col"
                     },
                         React.createElement('span', { className: "font-bold text-gray-800 dark:text-gray-200 text-sm" }, item.title),
@@ -318,34 +258,9 @@
         };
 
         // --- PANTALLAS ---
-        
+
         const InstallPrompt = () => {
-            const [show, setShow] = useState(false);
-            useEffect(() => {
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-                if (isIOS && !isStandalone && !localStorage.getItem('installPromptDismissed')) {
-                    setShow(true);
-                }
-            }, []);
-            if (!show) return null;
-            return React.createElement('div', { className: "fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom duration-500" },
-                React.createElement('div', { className: "bg-gray-900/95 backdrop-blur text-white p-4 rounded-2xl shadow-2xl border border-gray-700 relative" },
-                    React.createElement('button', { onClick: () => { setShow(false); localStorage.setItem('installPromptDismissed', 'true'); }, className: "absolute top-2 right-2 text-gray-400 hover:text-white" }, React.createElement(X, { size: 18 })),
-                    React.createElement('div', { className: "flex items-start gap-3" },
-                        React.createElement('div', { className: "bg-indigo-500 p-2 rounded-xl" }, React.createElement(Radio, { size: 24, className: "text-white" })),
-                        React.createElement('div', null,
-                            React.createElement('h4', { className: "font-bold text-sm mb-1" }, "Instala M&B Play"),
-                            React.createElement('p', { className: "text-xs text-gray-300 leading-relaxed" },
-                                "Para la mejor experiencia:", React.createElement('br'),
-                                "1. Toca ", React.createElement('strong', { className: "text-white inline-flex items-center gap-1" }, React.createElement(Share, { size: 10 }), " Compartir"), React.createElement('br'),
-                                "2. Elige ", React.createElement('strong', { className: "text-white inline-flex items-center gap-1" }, React.createElement(PlusSquare, { size: 10 }), " Agregar a Inicio")
-                            )
-                        )
-                    ),
-                    React.createElement('div', { className: "absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-gray-900 rotate-45 border-r border-b border-gray-700" })
-                )
-            );
+             return null; 
         };
 
         const LoginScreen = ({ onLogin }) => {
@@ -356,32 +271,21 @@
                     ),
                     React.createElement('h1', { className: "text-5xl font-display mb-2 tracking-tight bg-gradient-to-r from-pink-500 to-indigo-600 bg-clip-text text-transparent leading-tight pb-2" }, "M&B Play"),
                     React.createElement('p', { className: "text-base font-body text-indigo-400 mb-8 font-bold" }, "Construyendo nuestro Soundtrack"),
-                    
                     React.createElement('p', { className: "mb-4 text-gray-400 dark:text-gray-500 font-bold uppercase text-xs tracking-widest" }, "¿Quién eres?"),
                     React.createElement('div', { className: "space-y-3" },
-                        React.createElement('button', { 
-                            onClick: () => onLogin(PLAYERS.player_1.id), 
-                            className: "w-full p-4 rounded-xl border-2 border-pink-100 bg-pink-50/50 text-pink-700 font-bold text-lg active:scale-95 transition-transform touch-manipulation font-body dark:bg-pink-900/20 dark:border-pink-800 dark:text-pink-300",
-                            style: { WebkitTapHighlightColor: 'transparent' }
-                        }, "Maga"),
-                        React.createElement('button', { 
-                            onClick: () => onLogin(PLAYERS.player_2.id), 
-                            className: "w-full p-4 rounded-xl border-2 border-blue-100 bg-blue-50/50 text-blue-700 font-bold text-lg active:scale-95 transition-transform touch-manipulation font-body dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300",
-                            style: { WebkitTapHighlightColor: 'transparent' }
-                        }, "Beto")
+                        React.createElement('button', { onClick: () => onLogin(PLAYERS.player_1.id), className: "w-full p-4 rounded-xl border-2 border-pink-100 bg-pink-50/50 text-pink-700 font-bold text-lg active:scale-95 transition-transform touch-manipulation font-body dark:bg-pink-900/20 dark:border-pink-800 dark:text-pink-300" }, "Maga"),
+                        React.createElement('button', { onClick: () => onLogin(PLAYERS.player_2.id), className: "w-full p-4 rounded-xl border-2 border-blue-100 bg-blue-50/50 text-blue-700 font-bold text-lg active:scale-95 transition-transform touch-manipulation font-body dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300" }, "Beto")
                     )
                 )
             );
         };
 
-        // NUEVA PESTAÑA PERFIL (NUTRIDA Y CON DARK MODE)
         const ProfileScreen = ({ userRole, onLogout, onFixCounters, stats, userId }) => {
             const player = PLAYERS[userRole];
             const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
             const [notes, setNotes] = useState('');
             const [isSavingNotes, setIsSavingNotes] = useState(false);
             
-            // Cargar notas personales
             useEffect(() => {
                 if(!userId) return;
                 getDoc(doc(db, 'user_notes', userId)).then(snap => {
@@ -409,6 +313,8 @@
             };
 
             const userTotal = stats ? (userRole === 'player_1' ? stats.totalMaga : stats.totalBeto) : 0;
+            const listenedTotal = stats ? (userRole === 'player_1' ? stats.listenedByMaga : stats.listenedByBeto) : 0; 
+            
             let userTitle = "Melómano Principiante";
             if (userTotal > 5) userTitle = "Selector de Éxitos";
             if (userTotal > 20) userTitle = "Curador Oficial";
@@ -429,9 +335,15 @@
                     React.createElement(Sparkles, { className: "absolute top-4 right-4 text-white/20", size: 48 }),
                     React.createElement(Music, { className: "absolute -bottom-6 -left-4 text-white/10", size: 120 }),
                     React.createElement('h3', { className: "text-xs font-bold uppercase tracking-widest opacity-80 mb-4" }, "Estadísticas Personales"),
-                    React.createElement('div', { className: "flex flex-col gap-1" },
-                        React.createElement('span', { className: "text-5xl font-display tracking-tight" }, userTotal),
-                        React.createElement('span', { className: "text-sm font-medium opacity-90" }, "canciones compartidas")
+                    React.createElement('div', { className: "flex gap-8" },
+                         React.createElement('div', { className: "flex flex-col gap-1" },
+                            React.createElement('span', { className: "text-4xl font-display tracking-tight" }, userTotal),
+                            React.createElement('span', { className: "text-xs font-medium opacity-90 uppercase" }, "Compartidas")
+                        ),
+                        React.createElement('div', { className: "flex flex-col gap-1" },
+                            React.createElement('span', { className: "text-4xl font-display tracking-tight" }, listenedTotal),
+                            React.createElement('span', { className: "text-xs font-medium opacity-90 uppercase" }, "Escuchadas")
+                        )
                     ),
                     React.createElement('div', { className: "mt-6 pt-4 border-t border-white/20 flex items-center gap-3" },
                         React.createElement(Trophy, { size: 20, className: "text-yellow-300" }),
@@ -442,7 +354,6 @@
                     )
                 ),
                 
-                // NOTAS PERSONALES
                 React.createElement('div', { className: "bg-white dark:bg-dark-card p-6 rounded-3xl shadow-lg border border-gray-100 dark:border-dark-border" },
                     React.createElement('h3', { className: "text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider flex items-center justify-between" }, 
                         React.createElement('span', { className: "flex items-center gap-2" }, React.createElement(StickyNote, { size: 14 }), "Notas Personales"),
@@ -451,7 +362,7 @@
                     React.createElement('textarea', {
                         value: notes,
                         onChange: (e) => setNotes(e.target.value),
-                        onBlur: saveNotes, // Guardar al salir del campo
+                        onBlur: saveNotes, 
                         placeholder: "Anota aquí ideas de canciones o temáticas futuras...",
                         className: "w-full h-24 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none dark:text-white",
                     })
@@ -462,21 +373,19 @@
                         React.createElement(Settings, { size: 14 }), "Configuración"
                     ),
                     React.createElement('div', { className: "flex flex-col gap-3" },
-                         // TOGGLE DARK MODE
                         React.createElement('button', { 
                             onClick: toggleDarkMode,
                             className: "w-full py-3 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-between transition-colors"
                         }, 
                             React.createElement('span', { className: "text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2" }, 
-                                darkMode ? React.createElement(Moon, { size: 16 }) : React.createElement(Sun, { size: 16 }),
-                                "Modo Oscuro"
+                                darkMode ? React.createElement(Moon, { size: 16 }) : React.createElement(Sun, { size: 16 }), "Modo Oscuro"
                             ),
                             React.createElement('div', { className: `w-10 h-5 rounded-full p-1 transition-colors ${darkMode ? 'bg-indigo-500' : 'bg-gray-300'}` },
                                 React.createElement('div', { className: `bg-white w-3 h-3 rounded-full shadow-sm transform transition-transform ${darkMode ? 'translate-x-5' : ''}` })
                             )
                         ),
                         React.createElement(Button, { onClick: onFixCounters, variant: "secondary", className: "w-full py-3 text-sm" }, 
-                            React.createElement(Wrench, { size: 16 }), " Reparar Contadores"
+                            React.createElement(Wrench, { size: 16 }), " Reparar y Migrar"
                         ),
                         React.createElement(Button, { onClick: onLogout, variant: "danger", className: "w-full py-3 font-body" }, 
                             React.createElement(LogOut, { size: 18 }), " Cerrar Sesión"
@@ -486,7 +395,7 @@
                 
                 React.createElement('div', { className: "py-8 opacity-40 flex flex-col items-center justify-center gap-2" },
                     React.createElement('span', { className: "material-symbols-outlined text-gray-400", style: { fontSize: '32px' } }, "edit_audio"),
-                    React.createElement('p', { className: "text-center text-gray-400 text-xs font-medium uppercase tracking-widest font-body" }, "M&B Play v4.0")
+                    React.createElement('p', { className: "text-center text-gray-400 text-xs font-medium uppercase tracking-widest font-body" }, "M&B Play v4.1")
                 )
             );
         };
@@ -502,8 +411,9 @@
             const myData = entry?.players?.[userRole] || {};
             const otherData = entry?.players?.[otherRole] || {};
             const isSubmitted = (myData.status === 'enviado' || myData.status === 'escuchado') && myData.song_title;
+            const isOtherSongSubmitted = otherData.status === 'enviado' || otherData.status === 'escuchado';
+            const isOtherSongListened = otherData.status === 'escuchado';
 
-            // VARIABLES PARA EL BOTÓN DE AVISAR
             const otherTheme = otherData.theme_name;
             const shouldNudge = !otherTheme || !otherData.song_title;
             
@@ -547,6 +457,12 @@
                 });
             };
 
+            const handleMarkListened = () => {
+                 onUpdateEntry({
+                    [`players.${otherRole}.status`]: 'escuchado'
+                });
+            };
+
             const handleSongSelect = (item) => {
                 if (item.artist) setLocalArtist(item.artist);
             };
@@ -560,25 +476,13 @@
             );
 
             return React.createElement('div', { className: "px-5 pb-32 space-y-6 pt-[calc(1.25rem+env(safe-area-inset-top))]" },
-                
-                 React.createElement('header', { className: "flex items-center justify-between pt-2 mb-2" },
-                    React.createElement('h1', { className: "text-4xl font-display text-gray-900 dark:text-white tracking-tight" }, "Hoy"),
-                    React.createElement('div', { className: "bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold text-xs" },
-                        React.createElement(Calendar, { size: 14 }), getTodayString().split('T')[0]
-                    )
-                ),
-
                 React.createElement('div', { className: `p-6 rounded-3xl border-2 ${PLAYERS[userRole].border} ${PLAYERS[userRole].bg} dark:bg-gray-800 dark:border-gray-700 shadow-sm relative` },
                     React.createElement('div', { className: "mb-5" },
                         React.createElement('h3', { className: `font-bold text-lg flex items-center gap-2 ${PLAYERS[userRole].color} mb-3` }, React.createElement(User, { size: 20 }), " Tu Turno"),
                         React.createElement('div', { className: "bg-white/70 dark:bg-gray-900/50 p-4 rounded-2xl border border-white/60 dark:border-gray-600 text-center shadow-sm relative" },
                             React.createElement('span', { className: "text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block" }, "Temática"),
                             React.createElement('span', { className: "text-xl font-bold text-gray-800 dark:text-white leading-tight font-body" }, myData.theme_name),
-                            !isSubmitted && React.createElement('button', { 
-                                onClick: onDeselectTheme,
-                                className: "absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1 transition-colors",
-                                title: "Cambiar temática"
-                            }, React.createElement(X, { size: 16 }))
+                            !isSubmitted && React.createElement('button', { onClick: onDeselectTheme, className: "absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1 transition-colors", title: "Cambiar temática" }, React.createElement(X, { size: 16 }))
                         )
                     ),
                     !isSubmitted ? React.createElement('div', { className: "space-y-4" },
@@ -586,21 +490,14 @@
                         React.createElement(PredictiveInput, { label: "Artista", value: localArtist, onChange: setLocalArtist, placeholder: "", type: "artist" }),
                         React.createElement('div', { className: "mb-2" },
                             React.createElement('label', { className: "block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1" }, "Comentario"),
-                            React.createElement('textarea', {
-                                value: localComment, onChange: (e) => setLocalComment(e.target.value),
-                                className: "w-full p-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-base shadow-sm min-h-[80px] font-body dark:bg-dark-card dark:border-dark-border dark:text-white",
-                                rows: "2", placeholder: ""
-                            })
+                            React.createElement('textarea', { value: localComment, onChange: (e) => setLocalComment(e.target.value), className: "w-full p-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-base shadow-sm min-h-[80px] font-body dark:bg-dark-card dark:border-dark-border dark:text-white", rows: "2", placeholder: "" })
                         ),
                         React.createElement(Button, { onClick: handleSubmit, className: "w-full py-4 text-lg shadow-md mt-2 font-body font-bold" }, "Enviar Canción")
                     ) : React.createElement('div', { className: "text-center py-6 relative" },
                         React.createElement('div', { className: "w-14 h-14 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500 shadow-md" }, React.createElement(CheckCircle2, { size: 32 })),
                         React.createElement('h4', { className: "font-bold text-gray-800 dark:text-white text-xl mb-1 font-body" }, localSong),
                         React.createElement('p', { className: "text-gray-600 dark:text-gray-300 font-medium" }, localArtist),
-                        myData.spotify_link && React.createElement('a', { 
-                            href: myData.spotify_link, target: "_blank", rel: "noopener noreferrer",
-                            className: "inline-flex items-center gap-2 mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md transition-colors font-body"
-                        }, React.createElement(ExternalLink, { size: 14 }), "Abrir en Spotify"),
+                        myData.spotify_link && React.createElement('a', { href: myData.spotify_link, target: "_blank", rel: "noopener noreferrer", className: "inline-flex items-center gap-2 mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md transition-colors font-body" }, React.createElement(ExternalLink, { size: 14 }), "Abrir en Spotify"),
                         localComment && React.createElement('p', { className: "mt-4 text-sm text-gray-500 italic bg-white/50 dark:bg-gray-700/50 p-3 rounded-lg inline-block font-body dark:text-gray-300" }, `"${localComment}"`),
                         React.createElement('button', { onClick: () => onUpdateEntry({[`players.${userRole}.status`]: 'pendiente'}), className: "block w-full mt-6 text-xs text-gray-400 font-bold uppercase tracking-widest underline p-2" }, "Editar envío"),
                         otherData.reaction_emoji && React.createElement('div', { className: "absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg border border-gray-100 dark:border-gray-700 text-3xl animate-bounce-slow", style: { animationDuration: '3s' } }, otherData.reaction_emoji)
@@ -617,13 +514,18 @@
                             React.createElement('span', { className: "text-sm text-gray-500 dark:text-gray-400 font-medium" }, "Sin temática aún")
                         )
                     ),
-                    (otherData.status === 'enviado' || otherData.status === 'escuchado') ? React.createElement('div', { className: "text-center pb-12" },
-                        React.createElement('h4', { className: "font-bold text-gray-800 dark:text-white text-xl mb-1 font-body" }, otherData.song_title),
-                        React.createElement('p', { className: "text-gray-600 dark:text-gray-300 font-medium mb-4" }, otherData.artist),
-                        otherData.spotify_link && React.createElement('a', { 
-                            href: otherData.spotify_link, target: "_blank", rel: "noopener noreferrer",
-                            className: "inline-flex items-center gap-2 mb-6 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md transition-colors font-body"
-                        }, React.createElement(ExternalLink, { size: 14 }), "Abrir en Spotify"),
+                    isOtherSongSubmitted ? React.createElement('div', { className: "text-center pb-12" },
+                        React.createElement('h4', { className: "font-bold text-gray-800 text-xl mb-1 font-body" }, otherData.song_title),
+                        React.createElement('p', { className: "text-gray-600 font-medium mb-4" }, otherData.artist),
+                        otherData.spotify_link && React.createElement('a', { href: otherData.spotify_link, target: "_blank", rel: "noopener noreferrer", className: "inline-flex items-center gap-2 mb-6 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md transition-colors font-body" }, React.createElement(ExternalLink, { size: 14 }), "Abrir en Spotify"),
+                        
+                        !isOtherSongListened && React.createElement('div', { className: "mb-6" },
+                             React.createElement(Button, { onClick: handleMarkListened, variant: "success", className: "w-full py-3 text-sm font-bold" }, React.createElement(Headphones, { size: 16 }), " Marcar como Escuchada")
+                        ),
+                        isOtherSongListened && React.createElement('div', { className: "mb-6 flex justify-center" },
+                             React.createElement('span', { className: "bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1" }, React.createElement(Check, { size: 14 }), " Escuchada")
+                        ),
+
                         otherData.comment && React.createElement('div', { className: "bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl mb-2 text-sm text-gray-600 dark:text-gray-300 italic relative text-left inline-block w-full" },
                             React.createElement('span', { className: "text-2xl text-gray-300 absolute -top-2 left-2 font-serif" }, "“"),
                             React.createElement('p', { className: "pl-2 relative z-10 font-body" }, otherData.comment),
@@ -632,7 +534,6 @@
                         !otherData.comment && myData.reaction_emoji && React.createElement('div', { className: "absolute bottom-16 right-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-600 rounded-full px-2 py-1 shadow-md text-xl z-20" }, myData.reaction_emoji),
                         React.createElement('div', { className: "absolute bottom-4 left-0 w-full flex justify-center" },
                             React.createElement('div', { className: "bg-white/90 dark:bg-gray-800/90 backdrop-blur border border-gray-200 dark:border-gray-700 rounded-full shadow-lg px-3 py-2 flex gap-2 items-center overflow-x-auto max-w-[90%] scrollbar-hide" },
-                                React.createElement('span', { className: "text-gray-300 mr-1" }, React.createElement(SmilePlus, { size: 16 })),
                                 EMOJIS.map(emoji => React.createElement('button', {
                                     key: emoji,
                                     onClick: () => handleReaction(emoji),
@@ -723,6 +624,7 @@
 
                     data.forEach(d => {
                         const p1 = d.players?.player_1, p2 = d.players?.player_2;
+                        
                         if (p1?.song_title) totalMaga++;
                         if (p2?.song_title) totalBeto++;
                         
@@ -750,8 +652,6 @@
                     const sortedHistory = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
                     setHistory(sortedHistory);
                     setStats({ totalMaga, totalBeto, chartData, maxTotal, hits: hits.reverse().slice(0, 20) });
-                }, (error) => {
-                    console.error("Error lectura:", error);
                 });
                 return () => unsubscribe();
             }, [userId]);
@@ -760,13 +660,13 @@
 
             return React.createElement('div', { className: "px-5 pb-32 space-y-5 pt-[calc(1.25rem+env(safe-area-inset-top))]" },
                 React.createElement('h2', { className: "text-2xl font-bold text-gray-900 dark:text-white font-display" }, "Resumen Histórico"),
-                React.createElement('div', { className: "grid grid-cols-2 gap-4" },
-                    React.createElement('div', { className: "flex flex-col justify-center items-center gap-1 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 p-6 rounded-2xl border border-pink-100 dark:border-pink-800 shadow-sm" },
-                        React.createElement('p', { className: "text-xs font-bold uppercase tracking-widest opacity-70" }, "Maga"),
+                React.createElement('div', { className: "flex gap-4 justify-between" },
+                    React.createElement('div', { className: "flex-1 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 p-6 rounded-2xl border border-pink-100 dark:border-pink-800 flex flex-col justify-center items-center shadow-sm" },
+                        React.createElement('p', { className: "text-xs font-bold uppercase tracking-widest opacity-70 mb-2" }, "Maga"),
                         React.createElement('p', { className: "text-5xl font-display tracking-tight" }, stats.totalMaga)
                     ),
-                    React.createElement('div', { className: "flex flex-col justify-center items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-6 rounded-2xl border border-blue-100 dark:border-blue-800 shadow-sm" },
-                        React.createElement('p', { className: "text-xs font-bold uppercase tracking-widest opacity-70" }, "Beto"),
+                    React.createElement('div', { className: "flex-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-6 rounded-2xl border border-blue-100 dark:border-blue-800 flex flex-col justify-center items-center shadow-sm" },
+                        React.createElement('p', { className: "text-xs font-bold uppercase tracking-widest opacity-70 mb-2" }, "Beto"),
                         React.createElement('p', { className: "text-5xl font-display tracking-tight" }, stats.totalBeto)
                     )
                 ),
@@ -801,6 +701,10 @@
                             const p1 = day.players?.player_1 || {};
                             const p2 = day.players?.player_2 || {};
                             const legacyGlobalTheme = day.theme_name;
+                            // NUEVO: ICONO CHECK DE ESCUCHADO
+                            const p1Listened = p1.status === 'escuchado';
+                            const p2Listened = p2.status === 'escuchado';
+                            
                             return React.createElement('div', { key: day.id, className: "bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-gray-200 dark:border-dark-border overflow-hidden" },
                                 React.createElement('div', { className: "bg-gray-50/80 dark:bg-gray-800/50 p-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center" },
                                     React.createElement('span', { className: "text-xs font-bold text-gray-500 dark:text-gray-400" }, day.date),
@@ -808,9 +712,9 @@
                                 ),
                                 React.createElement('div', { className: "p-4 grid grid-cols-2 divide-x divide-gray-100 dark:divide-gray-700" },
                                     React.createElement('div', { className: "pr-3" },
-                                        React.createElement('div', { className: "flex items-center gap-1 mb-1.5" },
+                                        React.createElement('div', { className: "flex items-center gap-1 mb-1.5 justify-between" },
                                             React.createElement('p', { className: "text-xs font-extrabold text-pink-600 dark:text-pink-400 uppercase tracking-wider" }, "Maga"),
-                                            p1.reaction_emoji && React.createElement('span', { className: "text-base" }, p1.reaction_emoji)
+                                            p1Listened ? React.createElement(CheckCheck, {size: 14, className: "text-blue-500"}) : (p1.song_title && React.createElement(Check, {size: 14, className: "text-gray-300"}))
                                         ),
                                         p1.theme_name && React.createElement('p', { className: "text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold truncate mb-1" }, p1.theme_name),
                                         React.createElement('p', { className: "text-sm font-bold text-gray-800 dark:text-gray-200 truncate leading-snug font-body" }, p1.song_title || '-'),
@@ -818,9 +722,9 @@
                                         p1.spotify_link && React.createElement('a', { href: p1.spotify_link, target: "_blank", rel: "noopener noreferrer", className: "inline-flex mt-1 text-green-500 hover:text-green-400" }, React.createElement(ExternalLink, { size: 12 }))
                                     ),
                                     React.createElement('div', { className: "pl-3" },
-                                        React.createElement('div', { className: "flex items-center gap-1 mb-1.5" },
+                                        React.createElement('div', { className: "flex items-center gap-1 mb-1.5 justify-between" },
                                             React.createElement('p', { className: "text-xs font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider" }, "Beto"),
-                                            p2.reaction_emoji && React.createElement('span', { className: "text-base" }, p2.reaction_emoji)
+                                            p2Listened ? React.createElement(CheckCheck, {size: 14, className: "text-blue-500"}) : (p2.song_title && React.createElement(Check, {size: 14, className: "text-gray-300"}))
                                         ),
                                         p2.theme_name && React.createElement('p', { className: "text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold truncate mb-1" }, p2.theme_name),
                                         React.createElement('p', { className: "text-sm font-bold text-gray-800 dark:text-gray-200 truncate leading-snug font-body" }, p2.song_title || '-'),
@@ -844,7 +748,6 @@
              const [todayEntry, setTodayEntry] = useState(null);
              const [stats, setStats] = useState(null);
 
-             // --- INICIALIZACIÓN ---
              useEffect(() => {
                 const init = async () => {
                     await signInAnonymously(auth);
@@ -860,21 +763,24 @@
                 onAuthStateChanged(auth, setAuthUser);
             }, []);
 
-            // ... (Resto de lógica de carga de datos igual que antes)
-            // Se omite por brevedad, pero asume que es idéntica a la versión v3.0
-
             useEffect(() => {
                 if (!authUser) return;
                 const q = query(collection(db, 'daily_entries'));
                 const unsubscribe = onSnapshot(q, (snapshot) => {
                      const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-                     let totalMaga = 0, totalBeto = 0;
+                     let totalMaga = 0, totalBeto = 0, listenedMaga = 0, listenedBeto = 0;
                      data.forEach(d => {
                          const p1 = d.players?.player_1, p2 = d.players?.player_2;
-                         if (p1?.song_title) totalMaga++;
-                         if (p2?.song_title) totalBeto++;
+                         if (p1?.song_title) {
+                             totalMaga++;
+                             if (p1.status === 'escuchado') listenedBeto++; // Beto escuchó a Maga
+                         }
+                         if (p2?.song_title) {
+                             totalBeto++;
+                             if (p2.status === 'escuchado') listenedMaga++; // Maga escuchó a Beto
+                         }
                      });
-                     setStats({ totalMaga, totalBeto });
+                     setStats({ totalMaga, totalBeto, listenedByMaga: listenedMaga, listenedByBeto: listenedBeto });
                 });
                 return () => unsubscribe();
             }, [authUser]);
@@ -885,7 +791,6 @@
                 const themesQuery = query(collection(db, 'themes'));
                 const unsubThemes = onSnapshot(themesQuery, (snap) => {
                     const list = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                    // Sorting logic: Created At DESC
                     list.sort((a, b) => {
                         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -894,6 +799,11 @@
                     setThemes(list);
                     if(list.length === 0) {
                         DEFAULT_THEMES.forEach(name => addDoc(collection(db, 'themes'), {name, active: true}));
+                    }
+                }, (error) => {
+                    console.error("Error lectura:", error);
+                    if (error.code === 'permission-denied') {
+                        alert("¡Error de Permisos! \n\nNo has configurado las Reglas de Firebase.");
                     }
                 });
 
@@ -986,12 +896,31 @@
                 setCurrentScreen('themes');
             };
 
+            // Reparar Contadores y MIGRACIÓN DE ESTADO ESCUCHADO
             const handleFixCounters = async () => {
-                if (!confirm("¿Seguro que quieres recalcular los contadores basados en el historial?")) return;
+                if (!confirm("¿Seguro que quieres recalcular los contadores y actualizar el historial antiguo?")) return;
                 try {
                     const batch = writeBatch(db);
                     const entriesSnap = await getDocs(collection(db, 'daily_entries'));
                     const themesSnap = await getDocs(collection(db, 'themes'));
+                    
+                    // 1. Migración Masiva: Marcar canciones antiguas como escuchadas
+                    entriesSnap.docs.forEach(doc => {
+                        const data = doc.data();
+                        const p1 = data.players?.player_1;
+                        const p2 = data.players?.player_2;
+                        
+                        // Si Maga envió canción y no está marcada, marcarla (para que Beto tenga el check)
+                        if (p1?.song_title && p1.status !== 'escuchado') {
+                            batch.update(doc.ref, { [`players.player_1.status`]: 'escuchado' });
+                        }
+                        // Si Beto envió canción y no está marcada
+                        if (p2?.song_title && p2.status !== 'escuchado') {
+                            batch.update(doc.ref, { [`players.player_2.status`]: 'escuchado' });
+                        }
+                    });
+
+                    // 2. Recálculo de temas (igual que antes)
                     const realCounts = {};
                     entriesSnap.docs.forEach(doc => {
                         const data = doc.data();
@@ -1010,8 +939,9 @@
                         const counts = realCounts[themeDoc.id] || { p1: 0, p2: 0 };
                         batch.update(themeDoc.ref, { usage_player_1: counts.p1, usage_player_2: counts.p2 });
                     });
+
                     await batch.commit();
-                    alert("¡Contadores reparados!");
+                    alert("¡Todo actualizado! Canciones marcadas como escuchadas y contadores reparados.");
                 } catch (e) { console.error(e); alert("Error: " + e.message); }
             };
 
