@@ -32,17 +32,12 @@
         .pnl-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.75rem; }
         .pnl-cell { padding: 8px 12px; white-space: nowrap; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #f3f4f6; text-align: right; }
         .pnl-cell-head { font-weight: bold; background-color: #f9fafb; position: sticky; top: 0; z-index: 10; text-align: center; border-bottom: 2px solid #e5e7eb; }
-        .pnl-col-sticky { position: sticky; left: 0; background-color: white; z-index: 20; border-right: 2px solid #e5e7eb; text-align: left; min-width: 120px; }
+        .pnl-col-sticky { position: sticky; left: 0; background-color: white; z-index: 20; border-right: 2px solid #e5e7eb; text-align: left; min-width: 140px; }
         .pnl-col-sticky.pnl-cell-head { z-index: 30; } 
         .pnl-row-group-header { background-color: #f3f4f6; font-weight: bold; color: #374151; }
         .pnl-row-total { background-color: #fdfbf7; font-weight: bold; }
         .pnl-row-net { background-color: #ecfdf5; font-weight: 800; color: #047857; }
-        
-        @keyframes pulse-purple {
-            0%, 100% { box-shadow: 0 0 0 0px rgba(168, 85, 247, 0.4); }
-            50% { box-shadow: 0 0 0 8px rgba(168, 85, 247, 0); }
-        }
-        .animate-pulse-purple { animation: pulse-purple 2s infinite; }
+        .pnl-row-available { background-color: #eff6ff; font-weight: 800; color: #1d4ed8; border-top: 2px solid #dbeafe; border-bottom: 2px solid #dbeafe; } /* Nueva fila de Disponible */
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans overflow-hidden">
@@ -55,7 +50,7 @@
             Wallet, TrendingUp, TrendingDown, Plus, Settings, 
             Calendar, DollarSign, RefreshCw, X, Save, ArrowRightLeft,
             LogOut, ChevronDown, Filter, Home, History, PieChart, Trash2, List, FileSpreadsheet,
-            Users, User, Check
+            Users, User
         } from 'lucide-react';
 
         // --- FIREBASE ---
@@ -303,6 +298,7 @@
                 const finalRate = currency === 'USD' ? 1 : (rateType === 'bcv' ? rates.bcv : (rateType === 'parallel' ? rates.parallel : customRate));
                 const type = SEGMENTS[segment].type;
                 
+                // FIX: Usar ruta 'artifacts/{appId}/users/{userId}/transactions'
                 await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'transactions'), { 
                     type, 
                     segment, 
@@ -355,78 +351,24 @@
             const [tempRates, setTempRates] = useState(rates);
 
             useEffect(() => setTempRates(rates), [rates]);
-
             const handleSave = () => { onUpdateRate(tempRates); setIsEditing(false); };
 
             const fetchLiveRates = async () => {
                 setIsRefreshing(true);
                 try {
-                    // Usando dolarapi.com para Venezuela
                     const [bcvRes, parallelRes] = await Promise.all([
                         fetch('https://ve.dolarapi.com/v1/dolares/oficial').catch(() => null),
                         fetch('https://ve.dolarapi.com/v1/dolares/paralelo').catch(() => null)
                     ]);
-                    
                     const newRates = { ...rates };
-                    
-                    if (bcvRes && bcvRes.ok) {
-                        const bcvData = await bcvRes.json();
-                        if (bcvData.promedio) newRates.bcv = parseFloat(bcvData.promedio);
-                    }
-                    
-                    if (parallelRes && parallelRes.ok) {
-                        const parallelData = await parallelRes.json();
-                        if (parallelData.promedio) newRates.parallel = parseFloat(parallelData.promedio);
-                    }
-                    
+                    if (bcvRes && bcvRes.ok) { const bcvData = await bcvRes.json(); if (bcvData.promedio) newRates.bcv = parseFloat(bcvData.promedio); }
+                    if (parallelRes && parallelRes.ok) { const parallelData = await parallelRes.json(); if (parallelData.promedio) newRates.parallel = parseFloat(parallelData.promedio); }
                     onUpdateRate(newRates);
-                } catch (e) {
-                    console.error("Error fetching rates:", e);
-                    alert("No se pudieron actualizar las tasas automáticamente.");
-                } finally {
-                    setIsRefreshing(false);
-                }
+                } catch (e) { alert("No se pudieron actualizar las tasas automáticamente."); } finally { setIsRefreshing(false); }
             };
 
-            if (isEditing) {
-                return React.createElement(Card, { className: "bg-indigo-50 border-indigo-100" },
-                    React.createElement('div', { className: "flex justify-between items-center mb-3" },
-                        React.createElement('h3', { className: "text-sm font-bold text-indigo-800 uppercase" }, "Editar Tasas"),
-                        React.createElement('button', { onClick: handleSave, className: "text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg font-bold" }, "Guardar")
-                    ),
-                    React.createElement('div', { className: "grid grid-cols-2 gap-4" },
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "text-[10px] text-indigo-400 font-bold block mb-1" }, "BCV"),
-                            React.createElement('input', { type: "number", value: tempRates.bcv, onChange: e => setTempRates({...tempRates, bcv: e.target.value}), className: "w-full p-2 rounded-lg text-center font-bold text-indigo-700" })
-                        ),
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "text-[10px] text-indigo-400 font-bold block mb-1" }, "PARALELO"),
-                            React.createElement('input', { type: "number", value: tempRates.parallel, onChange: e => setTempRates({...tempRates, parallel: e.target.value}), className: "w-full p-2 rounded-lg text-center font-bold text-indigo-700" })
-                        )
-                    )
-                );
-            }
-
-            return React.createElement(Card, { className: "bg-indigo-50 border-indigo-100" },
-                React.createElement('div', { className: "flex justify-between items-center mb-3" },
-                    React.createElement('h3', { className: "text-xs font-bold text-indigo-400 uppercase tracking-widest" }, "Tasas del Día"),
-                    React.createElement('div', { className: "flex gap-2" },
-                        React.createElement('button', { onClick: fetchLiveRates, className: `p-1 hover:bg-indigo-100 rounded-full text-indigo-400 ${isRefreshing ? 'animate-spin' : ''}` }, React.createElement(RefreshCw, { size: 16 })),
-                        React.createElement('button', { onClick: () => setIsEditing(true), className: "p-1 hover:bg-indigo-100 rounded-full text-indigo-400" }, React.createElement(Settings, { size: 16 }))
-                    )
-                ),
-                React.createElement('div', { className: "flex justify-around items-center" },
-                    React.createElement('div', { className: "text-center" },
-                        React.createElement('p', { className: "text-2xl font-bold text-indigo-900" }, rates.bcv),
-                        React.createElement('p', { className: "text-[10px] font-bold text-indigo-400" }, "BCV")
-                    ),
-                    React.createElement('div', { className: "h-8 w-px bg-indigo-200" }),
-                    React.createElement('div', { className: "text-center" },
-                        React.createElement('p', { className: "text-2xl font-bold text-indigo-900" }, rates.parallel),
-                        React.createElement('p', { className: "text-[10px] font-bold text-indigo-400" }, "PARALELO")
-                    )
-                )
-            );
+            if (isEditing) { return React.createElement(Card, { className: "bg-indigo-50 border-indigo-100" }, React.createElement('div', { className: "flex justify-between items-center mb-3" }, React.createElement('h3', { className: "text-sm font-bold text-indigo-800 uppercase" }, "Editar Tasas"), React.createElement('button', { onClick: handleSave, className: "text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg font-bold" }, "Guardar")), React.createElement('div', { className: "grid grid-cols-2 gap-4" }, React.createElement('div', null, React.createElement('label', { className: "text-[10px] text-indigo-400 font-bold block mb-1" }, "BCV"), React.createElement('input', { type: "number", value: tempRates.bcv, onChange: e => setTempRates({...tempRates, bcv: e.target.value}), className: "w-full p-2 rounded-lg text-center font-bold text-indigo-700" })), React.createElement('div', null, React.createElement('label', { className: "text-[10px] text-indigo-400 font-bold block mb-1" }, "PARALELO"), React.createElement('input', { type: "number", value: tempRates.parallel, onChange: e => setTempRates({...tempRates, parallel: e.target.value}), className: "w-full p-2 rounded-lg text-center font-bold text-indigo-700" })))); }
+            return React.createElement(Card, { className: "bg-indigo-50 border-indigo-100" }, React.createElement('div', { className: "flex justify-between items-center mb-3" }, React.createElement('h3', { className: "text-xs font-bold text-indigo-400 uppercase tracking-widest" }, "Tasas del Día"), React.createElement('div', { className: "flex gap-2" }, React.createElement('button', { onClick: fetchLiveRates, className: `p-1 hover:bg-indigo-100 rounded-full text-indigo-400 ${isRefreshing ? 'animate-spin' : ''}` }, React.createElement(RefreshCw, { size: 16 })), React.createElement('button', { onClick: () => setIsEditing(true), className: "p-1 hover:bg-indigo-100 rounded-full text-indigo-400" }, React.createElement(Settings, { size: 16 })))), React.createElement('div', { className: "flex justify-around items-center" }, React.createElement('div', { className: "text-center" }, React.createElement('p', { className: "text-2xl font-bold text-indigo-900" }, rates.bcv), React.createElement('p', { className: "text-[10px] font-bold text-indigo-400" }, "BCV")), React.createElement('div', { className: "h-8 w-px bg-indigo-200" }), React.createElement('div', { className: "text-center" }, React.createElement('p', { className: "text-2xl font-bold text-indigo-900" }, rates.parallel), React.createElement('p', { className: "text-[10px] font-bold text-indigo-400" }, "PARALELO"))));
         };
 
         const HomeView = ({ rates, transactions, onUpdateRate, onOpenAdd, onOpenConfig, currentProfileLabel, onLogout }) => {
@@ -453,8 +395,13 @@
         
         const PnLReportView = ({ transactions, pnlStructure }) => {
             const [granularity, setGranularity] = useState('monthly');
-            const [startDate, setStartDate] = useState(() => { const d = new Date(); d.setMonth(d.getMonth() - 5); return d.toISOString().split('T')[0]; });
-            const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+            const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+            // Default 1 mes despues
+            const [endDate, setEndDate] = useState(() => {
+                const d = new Date();
+                d.setMonth(d.getMonth() + 1);
+                return d.toISOString().split('T')[0];
+            });
 
             const periods = useMemo(() => {
                 const start = new Date(startDate);
@@ -474,14 +421,18 @@
             }, [startDate, endDate, granularity]);
 
             const reportData = useMemo(() => {
-                const data = { net: {} }; 
+                const data = { net: {}, available: {} }; // Added 'available' bucket
                 const segments = ['ingresos', 'gastos_fijos', 'gastos_variables', 'ahorro'];
                 segments.forEach(seg => {
                     data[seg] = { concepts: {}, total: {} };
                     (pnlStructure[seg] || []).forEach(concept => { data[seg].concepts[concept] = {}; periods.forEach(p => data[seg].concepts[concept][p.id] = 0); });
                     periods.forEach(p => data[seg].total[p.id] = 0);
                 });
-                periods.forEach(p => data.net[p.id] = 0);
+                periods.forEach(p => {
+                    data.net[p.id] = 0;
+                    data.available[p.id] = 0; // Init available
+                });
+
                 transactions.forEach(t => {
                     const tDate = new Date(t.date);
                     if (tDate < new Date(startDate) || tDate > new Date(endDate + "T23:59:59")) return;
@@ -490,14 +441,25 @@
                     else if (granularity === 'monthly') pId = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`;
                     else if (granularity === 'yearly') pId = `${tDate.getFullYear()}`;
                     else if (granularity === 'weekly') { const tTime = tDate.getTime(); const period = periods.find((p, i) => { const pStart = new Date(p.id).getTime(); const nextP = periods[i+1]; const pEnd = nextP ? new Date(nextP.id).getTime() : Infinity; return tTime >= pStart && tTime < pEnd; }); if(period) pId = period.id; }
+                    
                     if (pId && data[t.segment]) {
                         const amount = t.amountUSD || 0;
                         if (!data[t.segment].concepts[t.category]) { data[t.segment].concepts[t.category] = {}; periods.forEach(p => data[t.segment].concepts[t.category][p.id] = 0); }
                         if (data[t.segment].concepts[t.category][pId] !== undefined) data[t.segment].concepts[t.category][pId] += amount;
                         data[t.segment].total[pId] += amount;
+                        
+                        // Net logic: Income - All Expenses (including Savings if treated as outflow from pocket)
                         if (SEGMENTS[t.segment].type === 'income') data.net[pId] += amount; else data.net[pId] -= amount;
                     }
                 });
+
+                // Calculate "Available" = Total Income - Total Savings
+                periods.forEach(p => {
+                    const totalIncome = data.ingresos.total[p.id] || 0;
+                    const totalSavings = data.ahorro.total[p.id] || 0;
+                    data.available[p.id] = totalIncome - totalSavings;
+                });
+
                 return data;
             }, [transactions, periods, granularity, startDate, endDate, pnlStructure]);
 
@@ -513,15 +475,31 @@
                     React.createElement('table', { className: "pnl-table" },
                         React.createElement('thead', null, React.createElement('tr', null, React.createElement('th', { className: "pnl-cell-head pnl-col-sticky" }, "Concepto"), periods.map(p => React.createElement('th', { key: p.id, className: "pnl-cell-head min-w-[80px]" }, p.label)))),
                         React.createElement('tbody', null,
-                            ['ingresos', 'gastos_fijos', 'gastos_variables', 'ahorro'].map(seg => 
+                            // REORDERED SEGMENTS: 1. INGRESOS, 2. AHORRO, 3. AVAILABLE (NEW), 4. GASTOS
+                            // BLOQUE 1: Ingresos
+                            ['ingresos', 'ahorro'].map(seg => 
                                 React.createElement(React.Fragment, { key: seg },
                                     React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-group-header" }, SEGMENTS[seg].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-group-header" }))),
                                     Object.entries(reportData[seg].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-600 pl-4" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))),
                                     React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-gray-800" }, `Total ${SEGMENTS[seg].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-total" }, Math.round(reportData[seg].total[p.id]).toLocaleString())))
                                 )
                             ),
+                            // NEW ROW: AVAILABLE (DISPONIBLE)
+                            React.createElement('tr', null,
+                                React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-available" }, "🔵 DISPONIBLE"),
+                                periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-available" }, Math.round(reportData.available[p.id]).toLocaleString()))
+                            ),
+                             // BLOQUE 2: Gastos
+                            ['gastos_fijos', 'gastos_variables'].map(seg => 
+                                React.createElement(React.Fragment, { key: seg },
+                                    React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-group-header" }, SEGMENTS[seg].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-group-header" }))),
+                                    Object.entries(reportData[seg].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-600 pl-4" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))),
+                                    React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-gray-800" }, `Total ${SEGMENTS[seg].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-total" }, Math.round(reportData[seg].total[p.id]).toLocaleString())))
+                                )
+                            ),
+                            
                             React.createElement('tr', null, React.createElement('td', { colSpan: periods.length + 1, className: "h-4 bg-gray-50" })),
-                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-net" }, "RESULTADO NETO"), periods.map(p => React.createElement('td', { key: p.id, className: `pnl-cell pnl-row-net ${reportData.net[p.id] < 0 ? 'text-red-600' : 'text-emerald-700'}` }, Math.round(reportData.net[p.id]).toLocaleString())))
+                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-net" }, "🟢 RESULTADO NETO"), periods.map(p => React.createElement('td', { key: p.id, className: `pnl-cell pnl-row-net ${reportData.net[p.id] < 0 ? 'text-red-600' : 'text-emerald-700'}` }, Math.round(reportData.net[p.id]).toLocaleString())))
                         )
                     )
                 )
@@ -549,6 +527,7 @@
                 // Usamos el ID del perfil seleccionado (user_01, user_02...) para separar los datos
                 const userPath = currentProfile;
                 
+                // Usar ruta 'artifacts' correcta para settings
                 const ratesRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', `rates_${currentProfile}`);
                 const unsubRates = onSnapshot(ratesRef, (doc) => { if (doc.exists()) setRates(doc.data()); else setDoc(ratesRef, { bcv: 36.5, parallel: 40.2 }); });
 
