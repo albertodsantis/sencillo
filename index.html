@@ -102,7 +102,7 @@
             Wallet, TrendingUp, TrendingDown, Plus, Settings, 
             Calendar, DollarSign, RefreshCw, X, Save, ArrowRightLeft,
             LogOut, ChevronDown, Filter, Home, History, PieChart, Trash2, List, FileSpreadsheet,
-            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight
+            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank
         } from 'lucide-react';
 
         // --- FIREBASE ---
@@ -115,22 +115,23 @@
         let appId;
 
         if (typeof __firebase_config !== 'undefined') {
+            // Modo Desarrollo (Gemini)
             firebaseConfig = JSON.parse(__firebase_config);
             appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         } else {
-            // Entorno Producción
+            // Entorno Producción (Tus datos reales de 'sencillo-app')
             firebaseConfig = {
-                apiKey: "AIzaSyBzbIz_VKis6nu1W7JWWeCSgLzBqJQ8HzY",
-                authDomain: "magapp-19035.firebaseapp.com",
-                projectId: "magapp-19035",
-                storageBucket: "magapp-19035.firebasestorage.app",
-                messagingSenderId: "1022326629606",
-                appId: "1:1022326629606:web:ebea8e95dd233bc6560727"
+                apiKey: "AIzaSyCAd_vju_x9wuhGtZJvvoWpt9JbRUwB63k",
+                authDomain: "sencillo-app-40a36.firebaseapp.com",
+                projectId: "sencillo-app-40a36",
+                storageBucket: "sencillo-app-40a36.firebasestorage.app",
+                messagingSenderId: "27193285455",
+                appId: "1:27193285455:web:6cb0f8ac14f0e36fb0433a"
             };
-            appId = 'finanzas-ve-app';
+            appId = 'sencillo-production'; 
         }
 
-        // Inicializar Firebase
+        // Inicializar Firebase con manejo de errores
         let app, auth, db;
         try {
             app = initializeApp(firebaseConfig);
@@ -344,7 +345,6 @@
             );
         };
 
-        // VISTA DE PRESUPUESTO NUEVA
         const BudgetView = ({ pnlStructure, budgets, onUpdateBudgets, transactions }) => {
             const [localBudgets, setLocalBudgets] = useState(budgets || {});
             const [isSaved, setIsSaved] = useState(false);
@@ -362,7 +362,6 @@
 
                 transactions.forEach(t => {
                     const tDate = new Date(t.date);
-                    // Filter for Gastos Variables in current month/year
                     if (t.segment === 'gastos_variables' && tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
                         if (!spending[t.category]) spending[t.category] = 0;
                         spending[t.category] += (t.amountUSD || 0);
@@ -391,7 +390,7 @@
 
             return React.createElement('div', { className: "h-full flex flex-col pt-[env(safe-area-inset-top)] bg-app-bg" },
                 React.createElement('div', { className: "p-6 bg-app-bg border-b border-white/5" },
-                    React.createElement('h2', { className: "text-3xl font-black text-white tracking-tight" }, "Presupuesto"),
+                    React.createElement('h2', { className: "text-3xl font-bold text-white mb-1 tracking-tight" }, "Presupuesto"),
                     React.createElement('p', { className: "text-gray-400 font-medium mt-1" }, "Control de Gastos Variables")
                 ),
                 
@@ -410,7 +409,6 @@
                                 React.createElement('p', { className: "text-lg font-bold text-white" }, `$${totalBudget.toFixed(0)}`)
                             )
                         ),
-                        // Global Progress
                         React.createElement('div', { className: "w-full bg-gray-800 rounded-full h-3 overflow-hidden" },
                             React.createElement('div', { className: `h-full rounded-full transition-all duration-500 ${progress > 100 ? 'bg-red-500' : 'bg-brand'}`, style: { width: `${Math.min(progress, 100)}%` } })
                         )
@@ -625,6 +623,30 @@
 
         const HomeView = ({ rates, transactions, onUpdateRate, onOpenAdd, onEditTransaction, currentProfileLabel, onLogout }) => {
             const [showRatesModal, setShowRatesModal] = useState(false);
+            
+            // Dashboard Summary Data - Current Month Only
+            const dashboardData = useMemo(() => {
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                
+                let ingresos = 0;
+                let gastos = 0;
+                let ahorro = 0;
+                
+                transactions.forEach(t => {
+                    const tDate = new Date(t.date);
+                    if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+                        const amount = t.amountUSD || 0;
+                        if (t.segment === 'ingresos') ingresos += amount;
+                        else if (t.segment === 'ahorro') ahorro += amount;
+                        else gastos += amount; // Gastos Fijos & Variables
+                    }
+                });
+                
+                return { ingresos, gastos, ahorro };
+            }, [transactions]);
+            
             const balance = transactions.reduce((acc, curr) => { return curr.type === 'income' ? acc + (curr.amountUSD || 0) : acc - (curr.amountUSD || 0); }, 0);
             const today = new Date().toLocaleDateString('es-VE', { day: 'numeric', month: 'short' });
 
@@ -652,29 +674,80 @@
                     React.createElement('button', { onClick: onOpenAdd, className: "w-full bg-white/90 text-emerald-900 hover:bg-white py-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg backdrop-blur-md" }, React.createElement(Plus, { size: 20 }), "Registrar Movimiento")
                 ),
                 
+                // Monthly Dashboard
+                React.createElement('div', { className: "grid grid-cols-3 gap-3" },
+                    React.createElement('div', { className: "bg-dark-surface p-4 rounded-2xl border border-white/5 flex flex-col items-center" },
+                        React.createElement('div', { className: "w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2 text-emerald-400" }, React.createElement(ArrowDownLeft, { size: 16 })),
+                        React.createElement('span', { className: "text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-1" }, "Ingresos"),
+                        React.createElement('span', { className: "text-sm font-bold text-white" }, `$${dashboardData.ingresos.toFixed(0)}`)
+                    ),
+                    React.createElement('div', { className: "bg-dark-surface p-4 rounded-2xl border border-white/5 flex flex-col items-center" },
+                        React.createElement('div', { className: "w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center mb-2 text-red-400" }, React.createElement(ArrowUpRight, { size: 16 })),
+                        React.createElement('span', { className: "text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-1" }, "Gastos"),
+                        React.createElement('span', { className: "text-sm font-bold text-white" }, `$${dashboardData.gastos.toFixed(0)}`)
+                    ),
+                    React.createElement('div', { className: "bg-dark-surface p-4 rounded-2xl border border-white/5 flex flex-col items-center" },
+                        React.createElement('div', { className: "w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center mb-2 text-blue-400" }, React.createElement(PiggyBank, { size: 16 })),
+                        React.createElement('span', { className: "text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-1" }, "Ahorro"),
+                        React.createElement('span', { className: "text-sm font-bold text-white" }, `$${dashboardData.ahorro.toFixed(0)}`)
+                    )
+                ),
+
                 showRatesModal && React.createElement(RatesModal, { onClose: () => setShowRatesModal(false), rates, onUpdateRate })
             );
         };
 
         const HistoryView = ({ transactions, onEditTransaction }) => {
+             // Estado para el mes actual
+             const [currentDate, setCurrentDate] = useState(new Date());
+
+             // Filtrar transacciones por mes y año
+             const filteredTransactions = useMemo(() => {
+                 return transactions.filter(t => {
+                     const tDate = new Date(t.date);
+                     // Fix de zona horaria: usar getMonth/FullYear sobre la fecha ya procesada
+                     return tDate.getMonth() === currentDate.getMonth() && 
+                            tDate.getFullYear() === currentDate.getFullYear();
+                 });
+             }, [transactions, currentDate]);
+
+             const prevMonth = () => {
+                 const newDate = new Date(currentDate);
+                 newDate.setMonth(newDate.getMonth() - 1);
+                 setCurrentDate(newDate);
+             };
+
+             const nextMonth = () => {
+                 const newDate = new Date(currentDate);
+                 newDate.setMonth(newDate.getMonth() + 1);
+                 setCurrentDate(newDate);
+             };
+             
+             // Formatear mes: "Febrero 2026"
+             const monthLabel = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+             const capitalizeFirst = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
              return React.createElement('div', { className: "px-5 pb-32 space-y-6", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } }, 
                 // Header con Navegación
                 React.createElement('div', { className: "flex justify-between items-center" },
                     React.createElement('h2', { className: "text-3xl font-black text-white" }, "Movimientos"),
                     React.createElement('div', { className: "flex items-center gap-1 bg-dark-card p-1.5 rounded-xl border border-white/10" },
-                        React.createElement('button', { className: "p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors" }, React.createElement(ChevronLeft, { size: 18 })),
-                        React.createElement('span', { className: "text-xs font-bold text-white uppercase min-w-[90px] text-center" }, "FEB 2026"),
-                        React.createElement('button', { className: "p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors" }, React.createElement(ChevronRight, { size: 18 }))
+                        React.createElement('button', { onClick: prevMonth, className: "p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors" }, React.createElement(ChevronLeft, { size: 18 })),
+                        React.createElement('span', { className: "text-xs font-bold text-white uppercase min-w-[90px] text-center" }, capitalizeFirst(monthLabel)),
+                        React.createElement('button', { onClick: nextMonth, className: "p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors" }, React.createElement(ChevronRight, { size: 18 }))
                     )
                 ),
                 
-                React.createElement('div', { className: "space-y-3" }, transactions.map(t => React.createElement('div', { key: t.id, onClick: () => onEditTransaction(t), className: "glass-panel p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/5 active:scale-[0.98] transition-all" }, 
+                // Lista
+                filteredTransactions.length === 0 ? 
+                    React.createElement('div', { className: "text-center py-10 text-gray-500 bg-dark-surface rounded-3xl border border-white/5" }, "No hay movimientos en este mes") :
+                    React.createElement('div', { className: "space-y-3" }, filteredTransactions.map(t => React.createElement('div', { key: t.id, onClick: () => onEditTransaction(t), className: "glass-panel p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/5 active:scale-[0.98] transition-all" }, 
                     React.createElement('div', { className: "flex flex-col" }, 
                         React.createElement('span', { className: "font-bold text-white text-base" }, t.category), 
                         React.createElement('span', { className: "text-xs text-gray-500 flex items-center gap-1.5 mt-1 font-medium" }, React.createElement(Calendar, {size: 12}), new Date(t.date).toLocaleDateString()),
                     ), 
                     React.createElement('div', { className: "text-right" }, 
-                        React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `$${(t.amountUSD || 0).toFixed(2)}`), 
+                        React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `${t.type === 'income' ? '+' : '-'}${(t.amountUSD || 0).toFixed(2)}`), 
                         React.createElement('span', { className: "text-xs text-gray-500 font-mono" }, t.currency === 'USD' ? 'USD' : `Bs ${t.amount}`)
                     )
                 )))
@@ -693,7 +766,9 @@
             return React.createElement('div', { className: "h-full flex flex-col pt-[env(safe-area-inset-top)] bg-app-bg" },
                 React.createElement('div', { className: "px-6 pb-6 bg-app-bg border-b border-white/5", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                        // Eliminado el H2 "Reporte"
                          React.createElement('select', { value: granularity, onChange: e => setGranularity(e.target.value), className: "bg-dark-highlight border border-white/10 text-white rounded-xl px-4 py-2 text-xs font-bold focus:outline-none min-w-[80px]" }, React.createElement('option', { value: "daily" }, "Diario"), React.createElement('option', { value: "weekly" }, "Semanal"), React.createElement('option', { value: "monthly" }, "Mensual"), React.createElement('option', { value: "yearly" }, "Anual")),
+                         // Fila unificada para fechas, mucho más compacta
                          React.createElement('div', { className: "flex gap-2 items-center flex-1 justify-end" }, 
                              React.createElement('input', { type: "date", value: startDate, onChange: e => setStartDate(e.target.value), className: "w-24 bg-dark-highlight border border-white/10 text-white rounded-xl px-2 py-2 text-xs font-medium" }), 
                              React.createElement('span', { className: "text-gray-500 text-xs" }, "a"),
