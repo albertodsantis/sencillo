@@ -103,9 +103,8 @@
             Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock
         } from 'lucide-react';
 
-        // --- FIREBASE ---
+        // --- FIREBASE IMPORTS (CDN para navegador) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // Importamos autenticación por email
         import { 
             getAuth, 
             signInWithEmailAndPassword,
@@ -126,9 +125,11 @@
             appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         } else {
             // Entorno Producción - TUS DATOS REALES DE SENCILLO
+            // Nota: databaseURL no es necesario para Firestore, pero no hace daño dejarlo
              firebaseConfig = {
                 apiKey: "AIzaSyCAd_vju_x9wuhGtZJvvoWpt9JbRUwB63k",
                 authDomain: "sencillo-app-40a36.firebaseapp.com",
+                databaseURL: "https://sencillo-app-40a36-default-rtdb.firebaseio.com",
                 projectId: "sencillo-app-40a36",
                 storageBucket: "sencillo-app-40a36.firebasestorage.app",
                 messagingSenderId: "27193285455",
@@ -258,14 +259,13 @@
                     } else {
                         await signInWithEmailAndPassword(auth, email, password);
                     }
-                    // Auth state listener handles redirect
                 } catch (error) {
                     console.error("Auth error:", error);
                     setLoading(false);
                     
                     if (error.code === 'auth/invalid-email') setErrorMsg("El email no es válido.");
                     else if (error.code === 'auth/user-disabled') setErrorMsg("Usuario deshabilitado.");
-                    else if (error.code === 'auth/user-not-found') setErrorMsg("Usuario no encontrado.");
+                    else if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') setErrorMsg("Usuario no encontrado o contraseña incorrecta.");
                     else if (error.code === 'auth/wrong-password') setErrorMsg("Contraseña incorrecta.");
                     else if (error.code === 'auth/email-already-in-use') setErrorMsg("El email ya está registrado.");
                     else if (error.code === 'auth/weak-password') setErrorMsg("La contraseña es muy débil (mínimo 6 caracteres).");
@@ -412,20 +412,34 @@
             }, [budgets]);
 
             // Calculate current spending per category for current month
-            const currentSpending = useMemo(() => {
+            const financials = useMemo(() => {
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
                 const spending = {};
+                let income = 0;
+                let savings = 0;
+                let fixed = 0;
+                let variableTotal = 0;
 
                 transactions.forEach(t => {
                     const tDate = new Date(t.date);
-                    if (t.segment === 'gastos_variables' && tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-                        if (!spending[t.category]) spending[t.category] = 0;
-                        spending[t.category] += (t.amountUSD || 0);
+                    if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
+                        const amount = t.amountUSD || 0;
+                        if (t.segment === 'gastos_variables') {
+                            if (!spending[t.category]) spending[t.category] = 0;
+                            spending[t.category] += amount;
+                            variableTotal += amount;
+                        } else if (t.segment === 'ingresos') {
+                            income += amount;
+                        } else if (t.segment === 'ahorro') {
+                            savings += amount;
+                        } else if (t.segment === 'gastos_fijos') {
+                            fixed += amount;
+                        }
                     }
                 });
-                return spending;
+                return { spending, income, savings, fixed, variableTotal };
             }, [transactions]);
 
             const handleBudgetChange = (category, value) => {
@@ -442,9 +456,10 @@
             };
 
             const totalBudget = Object.values(localBudgets).reduce((a, b) => a + b, 0);
-            const totalSpent = Object.values(currentSpending).reduce((a, b) => a + b, 0);
-            const remaining = totalBudget - totalSpent;
-            const progress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+            // Logic change here based on user request:
+            // Available = (Income - Savings) - Fixed Expenses
+            const realAvailable = (financials.income - financials.savings) - financials.fixed;
+            const progress = totalBudget > 0 ? (financials.variableTotal / totalBudget) * 100 : 0;
 
             return React.createElement('div', { className: "h-full flex flex-col pt-[env(safe-area-inset-top)] bg-app-bg" },
                 React.createElement('div', { className: "p-6 bg-app-bg border-b border-white/5" },
@@ -459,11 +474,11 @@
                         
                         React.createElement('div', { className: "flex justify-between items-end mb-4 relative z-10" },
                             React.createElement('div', null,
-                                React.createElement('p', { className: "text-xs text-gray-400 font-bold uppercase tracking-widest mb-1" }, "Disponible"),
-                                React.createElement('p', { className: `text-3xl font-black ${remaining >= 0 ? 'text-brand' : 'text-red-500'}` }, `$${remaining.toFixed(2)}`)
+                                // Eliminated "Disponible" label text
+                                React.createElement('p', { className: `text-3xl font-black ${realAvailable >= 0 ? 'text-brand' : 'text-red-500'}` }, `$${realAvailable.toFixed(2)}`)
                             ),
                             React.createElement('div', { className: "text-right" },
-                                React.createElement('p', { className: "text-xs text-gray-500 font-bold uppercase tracking-widest mb-1" }, "Meta"),
+                                // Eliminated "Meta" label text
                                 React.createElement('p', { className: "text-lg font-bold text-white" }, `$${totalBudget.toFixed(0)}`)
                             )
                         ),
@@ -476,7 +491,7 @@
                 React.createElement('div', { className: "flex-1 overflow-y-auto px-6 pb-36 mt-4 space-y-3" },
                     (pnlStructure['gastos_variables'] || []).map((category, idx) => {
                         const budget = localBudgets[category] || 0;
-                        const spent = currentSpending[category] || 0;
+                        const spent = financials.spending[category] || 0;
                         const percent = budget > 0 ? (spent / budget) * 100 : 0;
                         let barColor = 'bg-brand';
                         if (percent > 80) barColor = 'bg-yellow-500';
@@ -977,8 +992,7 @@
                     }, React.createElement(Settings, { size: 28, strokeWidth: currentTab === 'config' ? 2.5 : 2 }))
                 ),
 
-                showTransactionModal && React.createElement(TransactionModal, { onClose: handleCloseModal, rates, userId: user.uid, pnlStructure: pnlStructure, profileId: 'personal', initialData: editingTransaction }),
-                showConfigModal && React.createElement(ConfigView, { onClose: () => setShowConfigModal(false), pnlData: pnlStructure, onUpdatePnl: updatePnl })
+                showTransactionModal && React.createElement(TransactionModal, { onClose: handleCloseModal, rates, userId: user.uid, pnlStructure: pnlStructure, profileId: 'personal', initialData: editingTransaction })
             );
         };
 
