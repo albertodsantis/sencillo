@@ -48,7 +48,7 @@
         }
     </script>
     
-    <!-- Fuente Outfit para ese look moderno -->
+    <!-- Fuente Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -86,10 +86,8 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
-        /* Ajuste inputs date en dark mode (invertir icono calendario si es necesario) */
-        ::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
+        /* Ajuste inputs date en dark mode */
+        ::-webkit-calendar-picker-indicator { filter: invert(1); }
     </style>
 </head>
 <body class="bg-app-bg text-white overflow-hidden h-full">
@@ -107,9 +105,11 @@
 
         // --- FIREBASE ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        // Cambiamos a signInWithRedirect para mejor soporte móvil
         import { 
             getAuth, 
-            signInWithPopup, // Cambiado a Popup para mayor estabilidad
+            signInWithRedirect, 
+            getRedirectResult,
             signInAnonymously, 
             onAuthStateChanged, 
             signInWithCustomToken, 
@@ -127,8 +127,8 @@
             firebaseConfig = JSON.parse(__firebase_config);
             appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         } else {
-            // Entorno Producción - TUS DATOS REALES
-            firebaseConfig = {
+            // Entorno Producción - TUS DATOS REALES DE SENCILLO
+             firebaseConfig = {
                 apiKey: "AIzaSyCAd_vju_x9wuhGtZJvvoWpt9JbRUwB63k",
                 authDomain: "sencillo-app-40a36.firebaseapp.com",
                 projectId: "sencillo-app-40a36",
@@ -225,17 +225,39 @@
         // --- PANTALLAS ---
 
         const LoginScreen = ({ onLogin }) => {
-            const [loading, setLoading] = useState(false);
+            const [loading, setLoading] = useState(true); // Empezar cargando para chequear redirect
             const [errorMsg, setErrorMsg] = useState(null);
             
             useEffect(() => {
-                const autoAuth = async () => {
+                const checkAuth = async () => {
+                    // 1. Chequear token inicial (entorno dev)
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try { await signInWithCustomToken(auth, __initial_auth_token); } 
+                        try { await signInWithCustomToken(auth, __initial_auth_token); return; } 
                         catch (e) { console.error(e); }
                     }
+
+                    // 2. Chequear resultado de redirección de Google
+                    try {
+                        const result = await getRedirectResult(auth);
+                        if (result) {
+                            // Usuario logueado exitosamente, onAuthStateChanged manejará el resto
+                            console.log("Login por redirección exitoso");
+                        }
+                    } catch (error) {
+                        console.error("Error en redirección:", error);
+                        setLoading(false);
+                        if (error.code === 'auth/unauthorized-domain') {
+                            setErrorMsg("⚠️ Dominio no autorizado en Firebase Console.");
+                        } else {
+                            setErrorMsg(error.message);
+                        }
+                    } finally {
+                        setLoading(false); // Dejar de cargar si no hubo redirect o si falló
+                    }
                 };
-                if(auth) autoAuth();
+                
+                if (auth) checkAuth();
+                else setLoading(false);
             }, []);
 
             const handleGoogleLogin = async () => {
@@ -244,21 +266,12 @@
                 try {
                     if (!auth) throw new Error("Firebase no inicializado.");
                     const provider = new GoogleAuthProvider();
-                    // Usar Popup en lugar de Redirect
-                    await signInWithPopup(auth, provider);
+                    // Usamos REDIRECT para evitar problemas de popup en móviles
+                    await signInWithRedirect(auth, provider);
                 } catch (error) {
                     console.error("Login error:", error);
                     setLoading(false);
-                    // Mensajes más descriptivos
-                    if (error.code === 'auth/popup-blocked') {
-                        setErrorMsg("El navegador bloqueó la ventana. Por favor, permítela.");
-                    } else if (error.code === 'auth/popup-closed-by-user') {
-                        setErrorMsg("Cancelaste el inicio de sesión.");
-                    } else if (error.code === 'auth/unauthorized-domain') {
-                        setErrorMsg("Dominio no autorizado en Firebase. Añade este dominio en la consola.");
-                    } else {
-                        setErrorMsg("Error: " + error.message);
-                    }
+                    setErrorMsg("Error: " + error.message);
                 }
             };
 
@@ -784,7 +797,7 @@
                         React.createElement('span', { className: "text-xs text-gray-500 flex items-center gap-1.5 mt-1 font-medium" }, React.createElement(Calendar, {size: 12}), new Date(t.date).toLocaleDateString()),
                     ), 
                     React.createElement('div', { className: "text-right" }, 
-                        React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `${t.type === 'income' ? '+' : '-'}${(t.amountUSD || 0).toFixed(2)}`), 
+                        React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `$${(t.amountUSD || 0).toFixed(2)}`), 
                         React.createElement('span', { className: "text-xs text-gray-500 font-mono" }, t.currency === 'USD' ? 'USD' : `Bs ${t.amount}`)
                     )
                 )))
