@@ -103,7 +103,7 @@
             Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock
         } from 'lucide-react';
 
-        // --- FIREBASE IMPORTS (CDN para navegador) ---
+        // --- FIREBASE ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
             getAuth, 
@@ -125,11 +125,9 @@
             appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         } else {
             // Entorno Producción - TUS DATOS REALES DE SENCILLO
-            // Nota: databaseURL no es necesario para Firestore, pero no hace daño dejarlo
              firebaseConfig = {
                 apiKey: "AIzaSyCAd_vju_x9wuhGtZJvvoWpt9JbRUwB63k",
                 authDomain: "sencillo-app-40a36.firebaseapp.com",
-                databaseURL: "https://sencillo-app-40a36-default-rtdb.firebaseio.com",
                 projectId: "sencillo-app-40a36",
                 storageBucket: "sencillo-app-40a36.firebasestorage.app",
                 messagingSenderId: "27193285455",
@@ -272,7 +270,7 @@
                     else setErrorMsg("Error: " + error.message);
                 }
             };
-
+            
             return React.createElement('div', { 
                 className: "h-full flex flex-col items-center justify-center p-6 bg-app-bg text-white",
                 style: { paddingTop: "calc(env(safe-area-inset-top) + 40px)", paddingBottom: "40px" } 
@@ -456,10 +454,13 @@
             };
 
             const totalBudget = Object.values(localBudgets).reduce((a, b) => a + b, 0);
+            const totalSpent = Object.values(financials.spending).reduce((a, b) => a + b, 0); // Corrected reference
+            const remaining = totalBudget - totalSpent;
+            const progress = totalBudget > 0 ? (financials.variableTotal / totalBudget) * 100 : 0;
+            
             // Logic change here based on user request:
             // Available = (Income - Savings) - Fixed Expenses
             const realAvailable = (financials.income - financials.savings) - financials.fixed;
-            const progress = totalBudget > 0 ? (financials.variableTotal / totalBudget) * 100 : 0;
 
             return React.createElement('div', { className: "h-full flex flex-col pt-[env(safe-area-inset-top)] bg-app-bg" },
                 React.createElement('div', { className: "p-6 bg-app-bg border-b border-white/5" },
@@ -491,7 +492,7 @@
                 React.createElement('div', { className: "flex-1 overflow-y-auto px-6 pb-36 mt-4 space-y-3" },
                     (pnlStructure['gastos_variables'] || []).map((category, idx) => {
                         const budget = localBudgets[category] || 0;
-                        const spent = financials.spending[category] || 0;
+                        const spent = financials.spending[category] || 0; // Corrected reference
                         const percent = budget > 0 ? (spent / budget) * 100 : 0;
                         let barColor = 'bg-brand';
                         if (percent > 80) barColor = 'bg-yellow-500';
@@ -838,7 +839,7 @@
                         React.createElement('span', { className: "text-xs text-gray-500 flex items-center gap-1.5 mt-1 font-medium" }, React.createElement(Calendar, {size: 12}), new Date(t.date).toLocaleDateString()),
                     ), 
                     React.createElement('div', { className: "text-right" }, 
-                        React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `${t.type === 'income' ? '+' : '-'}${(t.amountUSD || 0).toFixed(2)}`), 
+                        React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `$${(t.amountUSD || 0).toFixed(2)}`), 
                         React.createElement('span', { className: "text-xs text-gray-500 font-mono" }, t.currency === 'USD' ? 'USD' : `Bs ${t.amount}`)
                     )
                 )))
@@ -992,7 +993,8 @@
                     }, React.createElement(Settings, { size: 28, strokeWidth: currentTab === 'config' ? 2.5 : 2 }))
                 ),
 
-                showTransactionModal && React.createElement(TransactionModal, { onClose: handleCloseModal, rates, userId: user.uid, pnlStructure: pnlStructure, profileId: 'personal', initialData: editingTransaction })
+                showTransactionModal && React.createElement(TransactionModal, { onClose: handleCloseModal, rates, userId: user.uid, pnlStructure: pnlStructure, profileId: 'personal', initialData: editingTransaction }),
+                showConfigModal && React.createElement(ConfigView, { onClose: () => setShowConfigModal(false), pnlData: pnlStructure, onUpdatePnl: updatePnl })
             );
         };
 
