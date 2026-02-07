@@ -11,6 +11,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -31,6 +32,20 @@
                     backgroundImage: {
                         'card-gradient': 'linear-gradient(135deg, #34D399 0%, #059669 100%)', // Degradado verde rico
                         'app-bg': 'radial-gradient(circle at 50% 0%, #1e293b 0%, #050505 40%)', // Brillo sutil arriba
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
+                        }
                     }
                 }
             }
@@ -100,7 +115,7 @@
             Wallet, TrendingUp, TrendingDown, Plus, Settings, 
             Calendar, DollarSign, RefreshCw, X, Save, ArrowRightLeft,
             LogOut, ChevronDown, Filter, Home, History, PieChart, Trash2, List, FileSpreadsheet,
-            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock
+            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle
         } from 'lucide-react';
 
         // --- FIREBASE ---
@@ -273,6 +288,16 @@
                     else setErrorMsg("Error: " + error.message);
                 }
             };
+
+            const handleGoogleLogin = async () => {
+                try {
+                    const provider = new GoogleAuthProvider();
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    console.error("Google Auth Error:", error);
+                    setErrorMsg("Error al iniciar con Google. Intenta con email.");
+                }
+            };
             
             return React.createElement('div', { 
                 className: "h-full flex flex-col items-center justify-center p-6 bg-app-bg text-white",
@@ -287,7 +312,10 @@
                         React.createElement('p', { className: "text-gray-400 text-lg font-light" }, "Tus cuentas claras")
                     ),
                     
-                    errorMsg && React.createElement('div', { className: "mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm" }, errorMsg),
+                    errorMsg && React.createElement('div', { className: "mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm flex items-center gap-2" }, 
+                        React.createElement(AlertCircle, { size: 16 }),
+                        errorMsg
+                    ),
 
                     React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
                         React.createElement('div', { className: "space-y-1" },
@@ -298,7 +326,7 @@
                                     type: "email", 
                                     value: email, 
                                     onChange: (e) => setEmail(e.target.value),
-                                    className: "w-full pl-11 pr-4 py-3 bg-dark-surface border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand placeholder-gray-700",
+                                    className: "w-full pl-11 pr-4 py-3 bg-dark-surface border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand placeholder-gray-700 transition-colors",
                                     placeholder: "hola@ejemplo.com"
                                 })
                              )
@@ -311,7 +339,7 @@
                                     type: "password", 
                                     value: password, 
                                     onChange: (e) => setPassword(e.target.value),
-                                    className: "w-full pl-11 pr-4 py-3 bg-dark-surface border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand placeholder-gray-700",
+                                    className: "w-full pl-11 pr-4 py-3 bg-dark-surface border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand placeholder-gray-700 transition-colors",
                                     placeholder: "••••••••"
                                 })
                              )
@@ -319,6 +347,26 @@
                         
                         React.createElement(Button, { type: "submit", disabled: loading, className: "mt-6" }, 
                             loading ? React.createElement(Loader2, { className: "animate-spin" }) : (isSignUp ? "Registrarse" : "Entrar")
+                        ),
+
+                        React.createElement('div', { className: "relative flex py-2 items-center" },
+                            React.createElement('div', { className: "flex-grow border-t border-white/10" }),
+                            React.createElement('span', { className: "flex-shrink mx-4 text-gray-500 text-xs" }, "O continúa con"),
+                            React.createElement('div', { className: "flex-grow border-t border-white/10" })
+                        ),
+
+                        React.createElement('button', { 
+                            type: "button",
+                            onClick: handleGoogleLogin,
+                            className: "w-full py-3 bg-white text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
+                        }, 
+                             React.createElement('svg', { className: "w-5 h-5", viewBox: "0 0 24 24" }, 
+                                React.createElement('path', { d: "M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z", fill: "#4285F4" }),
+                                React.createElement('path', { d: "M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z", fill: "#34A853" }),
+                                React.createElement('path', { d: "M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z", fill: "#FBBC05" }),
+                                React.createElement('path', { d: "M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z", fill: "#EA4335" })
+                             ),
+                             "Google"
                         )
                     ),
                     
@@ -461,8 +509,6 @@
             const remaining = totalBudget - totalSpent;
             const progress = totalBudget > 0 ? (financials.variableTotal / totalBudget) * 100 : 0;
             
-            // Logic change here based on user request:
-            // Available = (Income - Savings) - Fixed Expenses
             const realAvailable = (financials.income - financials.savings) - financials.fixed;
 
             return React.createElement('div', { className: "h-full flex flex-col pt-[env(safe-area-inset-top)] bg-app-bg" },
@@ -478,11 +524,11 @@
                         
                         React.createElement('div', { className: "flex justify-between items-end mb-4 relative z-10" },
                             React.createElement('div', null,
-                                // Eliminated "Disponible" label text
+                                React.createElement('p', { className: "text-xs text-gray-500 font-bold uppercase tracking-wider mb-1" }, "Disponible Real (Ing - Aho - Fij)"),
                                 React.createElement('p', { className: `text-3xl font-black ${realAvailable >= 0 ? 'text-brand' : 'text-red-500'}` }, `$${realAvailable.toFixed(2)}`)
                             ),
                             React.createElement('div', { className: "text-right" },
-                                // Eliminated "Meta" label text
+                                React.createElement('p', { className: "text-xs text-gray-500 font-bold uppercase tracking-wider mb-1" }, "Meta Gastos"),
                                 React.createElement('p', { className: "text-lg font-bold text-white" }, `$${totalBudget.toFixed(0)}`)
                             )
                         ),
@@ -497,15 +543,17 @@
                         const budget = localBudgets[category] || 0;
                         const spent = financials.spending[category] || 0; 
                         const percent = budget > 0 ? (spent / budget) * 100 : 0;
+                        
                         let barColor = 'bg-brand';
-                        if (percent > 80) barColor = 'bg-yellow-500';
-                        if (percent > 100) barColor = 'bg-red-500';
+                        let statusColor = 'text-gray-500';
+                        if (percent > 80) { barColor = 'bg-yellow-500'; statusColor = 'text-yellow-500'; }
+                        if (percent > 100) { barColor = 'bg-red-500'; statusColor = 'text-red-500'; }
 
                         return React.createElement('div', { key: idx, className: "bg-dark-surface p-4 rounded-2xl border border-white/5" },
                             React.createElement('div', { className: "flex justify-between items-center mb-3" },
                                 React.createElement('div', null,
                                     React.createElement('span', { className: "font-bold text-white block" }, category),
-                                    React.createElement('span', { className: "text-xs text-gray-500" }, `$${spent.toFixed(0)} gastados`)
+                                    React.createElement('span', { className: `text-xs ${statusColor}` }, `$${spent.toFixed(0)} gastados`)
                                 ),
                                 React.createElement('div', { className: "flex items-center gap-2 bg-dark-base rounded-xl px-3 py-2 border border-white/5" },
                                     React.createElement('span', { className: "text-xs text-gray-500 font-bold" }, "$"),
@@ -550,8 +598,8 @@
                 setIsRefreshing(false);
             };
 
-            return React.createElement('div', { className: "fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center animate-in fade-in" },
-                React.createElement('div', { className: "bg-dark-base w-full max-w-sm p-6 rounded-[2rem] border border-white/10 shadow-2xl mx-4" },
+            return React.createElement('div', { className: "fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center animate-fade-in" },
+                React.createElement('div', { className: "bg-dark-base w-full max-w-sm p-6 rounded-[2rem] border border-white/10 shadow-2xl mx-4 animate-slide-up" },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" }, 
                         React.createElement('div', { className: "flex items-baseline gap-2" },
                             React.createElement('h3', { className: "text-xl font-bold text-white tracking-tight" }, "Tasas del Día"),
@@ -664,8 +712,8 @@
             
             const isValid = amount && parseFloat(amount) > 0 && category;
 
-            return React.createElement('div', { className: "fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-end sm:items-center justify-center animate-in fade-in" },
-                React.createElement('div', { className: "bg-dark-base w-full max-w-md p-6 rounded-t-[2.5rem] sm:rounded-[2.5rem] max-h-[85vh] overflow-y-auto border border-white/10 shadow-2xl" },
+            return React.createElement('div', { className: "fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-end sm:items-center justify-center animate-fade-in" },
+                React.createElement('div', { className: "bg-dark-base w-full max-w-md p-6 rounded-t-[2.5rem] sm:rounded-[2.5rem] max-h-[85vh] overflow-y-auto border border-white/10 shadow-2xl animate-slide-up" },
                     React.createElement('div', { className: "flex justify-between items-center mb-8" }, 
                         React.createElement('h2', { className: "text-2xl font-bold text-white tracking-tight" }, isEditing ? "Editar" : "Nuevo Movimiento"), 
                         React.createElement('button', { onClick: onClose, className: "p-3 bg-dark-highlight rounded-full text-gray-400 hover:text-white transition-colors" }, React.createElement(X, { size: 24 }))
@@ -764,7 +812,7 @@
             const balance = transactions.reduce((acc, curr) => { return curr.type === 'income' ? acc + (curr.amountUSD || 0) : acc - (curr.amountUSD || 0); }, 0);
             const today = new Date().toLocaleDateString('es-VE', { day: 'numeric', month: 'short' });
 
-            return React.createElement('div', { className: "px-5 pb-32 space-y-8", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } },
+            return React.createElement('div', { className: "px-5 pb-32 space-y-8 animate-fade-in", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } },
                 // Header with Rates Button
                 React.createElement('header', { className: "flex justify-between items-center pt-2" }, 
                     React.createElement('div', { className: "flex items-center gap-3" },
@@ -816,18 +864,26 @@
         };
 
         const HistoryView = ({ transactions, onEditTransaction }) => {
-             // Estado para el mes actual
+             // Estado para el mes actual y filtro
              const [currentDate, setCurrentDate] = useState(new Date());
+             const [searchQuery, setSearchQuery] = useState("");
 
-             // Filtrar transacciones por mes y año
+             // Filtrar transacciones por mes y año, y luego por búsqueda
              const filteredTransactions = useMemo(() => {
                  return transactions.filter(t => {
                      const tDate = new Date(t.date);
-                     // Fix de zona horaria: usar getMonth/FullYear sobre la fecha ya procesada
-                     return tDate.getMonth() === currentDate.getMonth() && 
-                            tDate.getFullYear() === currentDate.getFullYear();
+                     const matchDate = tDate.getMonth() === currentDate.getMonth() && 
+                                       tDate.getFullYear() === currentDate.getFullYear();
+                     
+                     if (!matchDate) return false;
+                     
+                     if (!searchQuery) return true;
+                     
+                     const query = searchQuery.toLowerCase();
+                     return (t.description && t.description.toLowerCase().includes(query)) || 
+                            t.category.toLowerCase().includes(query);
                  });
-             }, [transactions, currentDate]);
+             }, [transactions, currentDate, searchQuery]);
 
              const prevMonth = () => {
                  const newDate = new Date(currentDate);
@@ -841,11 +897,10 @@
                  setCurrentDate(newDate);
              };
              
-             // Formatear mes: "Febrero 2026"
              const monthLabel = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
              const capitalizeFirst = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
-             return React.createElement('div', { className: "px-5 pb-32 space-y-6", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } }, 
+             return React.createElement('div', { className: "px-5 pb-32 space-y-6 animate-fade-in", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } }, 
                 // Header con Navegación
                 React.createElement('div', { className: "flex justify-between items-center" },
                     React.createElement('h2', { className: "text-3xl font-black text-white" }, "Movimientos"),
@@ -856,12 +911,25 @@
                     )
                 ),
                 
+                // Search Bar
+                React.createElement('div', { className: "relative" },
+                    React.createElement('span', { className: "absolute left-4 top-3.5 text-gray-500" }, React.createElement(Search, { size: 18 })),
+                    React.createElement('input', {
+                        type: "text",
+                        value: searchQuery,
+                        onChange: (e) => setSearchQuery(e.target.value),
+                        placeholder: "Buscar (ej. Panadería)...",
+                        className: "w-full pl-11 pr-4 py-3 bg-dark-surface border border-white/5 rounded-xl text-white focus:outline-none focus:border-brand placeholder-gray-700 transition-colors"
+                    })
+                ),
+                
                 // Lista
                 filteredTransactions.length === 0 ? 
-                    React.createElement('div', { className: "text-center py-10 text-gray-500 bg-dark-surface rounded-3xl border border-white/5" }, "No hay movimientos en este mes") :
+                    React.createElement('div', { className: "text-center py-10 text-gray-500 bg-dark-surface rounded-3xl border border-white/5" }, "No hay movimientos encontrados") :
                     React.createElement('div', { className: "space-y-3" }, filteredTransactions.map(t => React.createElement('div', { key: t.id, onClick: () => onEditTransaction(t), className: "glass-panel p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/5 active:scale-[0.98] transition-all" }, 
                     React.createElement('div', { className: "flex flex-col" }, 
                         React.createElement('span', { className: "font-bold text-white text-base" }, t.category), 
+                        t.description && React.createElement('span', { className: "text-xs text-gray-400 font-medium" }, t.description),
                         React.createElement('span', { className: "text-xs text-gray-500 flex items-center gap-1.5 mt-1 font-medium" }, React.createElement(Calendar, {size: 12}), new Date(t.date).toLocaleDateString()),
                     ), 
                     React.createElement('div', { className: "text-right" }, 
@@ -921,7 +989,8 @@
             const [editingTransaction, setEditingTransaction] = useState(null);
 
             useEffect(() => {
-                onAuthStateChanged(auth, setUser);
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
             }, []);
 
             useEffect(() => {
@@ -986,7 +1055,7 @@
                     currentTab === 'config' ? React.createElement(ConfigView, { pnlData: pnlStructure, onUpdatePnl: updatePnl }) : null
                 ),
 
-                currentTab === 'home' && React.createElement('div', { className: "fixed bottom-24 left-1/2 transform -translate-x-1/2 z-40 safe-bottom" },
+                currentTab === 'home' && React.createElement('div', { className: "fixed bottom-24 right-6 z-40 safe-bottom animate-bounce-in" },
                     React.createElement('button', { onClick: () => setShowTransactionModal(true), className: "bg-brand text-black p-5 rounded-full shadow-2xl shadow-brand/40 hover:scale-105 transition-transform border border-white/20" }, React.createElement(Plus, { size: 28 }))
                 ),
 
