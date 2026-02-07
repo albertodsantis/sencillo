@@ -131,43 +131,52 @@
             signInWithEmailAndPassword,
             createUserWithEmailAndPassword
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, limit, addDoc, deleteDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // CAMBIO IMPORTANTE: Importamos initializeFirestore para configuración avanzada
+        import { getFirestore, initializeFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, limit, addDoc, deleteDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // CONFIGURACIÓN DINÁMICA
         let firebaseConfig;
         let appId;
 
-        if (typeof __firebase_config !== 'undefined') {
-            // Modo Desarrollo (Gemini)
-            firebaseConfig = JSON.parse(__firebase_config);
-            appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        } else {
-            // Entorno Producción - TUS DATOS REALES
-             firebaseConfig = {
-                apiKey: "AIzaSyCAd_vju_x9wuhGtZJvvoWpt9JbRUwB63k",
-                authDomain: "sencillo-app-40a36.firebaseapp.com",
-                databaseURL: "https://sencillo-app-40a36-default-rtdb.firebaseio.com",
-                projectId: "sencillo-app-40a36",
-                storageBucket: "sencillo-app-40a36.firebasestorage.app",
-                messagingSenderId: "27193285455",
-                appId: "1:27193285455:web:6cb0f8ac14f0e36fb0433a"
-            };
-            
-            // CAMBIO: Ahora usamos el mismo ID del proyecto como carpeta
-            // Esto es para que no te confundas. La carpeta en Firestore se llamará 'sencillo-app-40a36'
-            appId = firebaseConfig.projectId; 
-        }
+        // --- FORZADO PARA ALBERTO ---
+        // Comentamos la detección automática para asegurar que usa TUS credenciales reales siempre
+        // if (typeof __firebase_config !== 'undefined') { ... } else { ... }
+        
+        firebaseConfig = {
+            apiKey: "AIzaSyCAd_vju_x9wuhGtZJvvoWpt9JbRUwB63k",
+            authDomain: "sencillo-app-40a36.firebaseapp.com",
+            databaseURL: "https://sencillo-app-40a36-default-rtdb.firebaseio.com",
+            projectId: "sencillo-app-40a36",
+            storageBucket: "sencillo-app-40a36.firebasestorage.app",
+            messagingSenderId: "27193285455",
+            appId: "1:27193285455:web:6cb0f8ac14f0e36fb0433a"
+        };
+        
+        // Usamos el ID del proyecto como nombre de carpeta para evitar confusiones
+        appId = 'sencillo-app-40a36';
 
         // Inicializar Firebase
         let app, auth, db;
         try {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
-            db = getFirestore(app);
-            console.log("Firebase inicializado con Project ID:", firebaseConfig.projectId);
+            
+            // CAMBIO CRÍTICO: Usar initializeFirestore con experimentalForceLongPolling
+            // Esto soluciona el problema de que se quede "cargando" infinitamente en algunas redes.
+            db = initializeFirestore(app, {
+                experimentalForceLongPolling: true
+            });
+            
+            console.log("Firebase inicializado (FORZADO) con Project ID:", firebaseConfig.projectId);
         } catch (error) {
             console.error("Error inicializando Firebase:", error);
-            alert("Error crítico: No se pudo conectar con Firebase. Revisa la consola.");
+            // Si ya existe (hot reload), intentamos obtener la instancia
+            try {
+                // Fallback por si acaso
+                db = getFirestore();
+            } catch(e) {
+                alert("Error crítico de inicialización. Recarga la página.");
+            }
         }
 
         // --- CONSTANTES ---
@@ -254,9 +263,10 @@
             
             useEffect(() => {
                 const autoAuth = async () => {
+                    // Solo intentar auto-auth si estamos en sandbox, pero con fallback suave
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         try { await signInWithCustomToken(auth, __initial_auth_token); } 
-                        catch (e) { console.error(e); }
+                        catch (e) { console.warn("Auto-auth failed (expected if forcing real config)", e); }
                     }
                 };
                 if(auth) autoAuth();
@@ -428,7 +438,7 @@
                 } catch (e) {
                     console.error(e);
                     setTestStatus("❌ ERROR: " + e.code);
-                    alert("ERROR DE PERMISOS:\n" + e.message + "\n\nPOR FAVOR: Ve a Firebase Console -> Firestore Database -> Rules y pega las reglas que te envié.");
+                    alert("ERROR DE ESCRITURA:\n" + e.message + "\n\nCódigo: " + e.code + "\n\nVerifica tus REGLAS de seguridad en Firebase.");
                 }
             };
 
@@ -477,7 +487,7 @@
                     
                     // --- DIAGNÓSTICO PARA ALBERTO ---
                     React.createElement('div', { className: "bg-gray-900/50 p-4 rounded-2xl border border-white/5 text-xs text-gray-500 space-y-3" },
-                        React.createElement('p', { className: "font-bold uppercase text-gray-400" }, "Diagnóstico de Conexión"),
+                        React.createElement('p', { className: "font-bold uppercase text-gray-400" }, "Diagnóstico de Conexión (FORZADA)"),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "User ID:"), React.createElement('span', { className: "font-mono" }, userId ? userId.slice(0,8) + "..." : "No auth")),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "Project:"), React.createElement('span', { className: "font-mono" }, firebaseConfig.projectId)),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "App ID (Path):"), React.createElement('span', { className: "font-mono" }, appId)),
