@@ -172,7 +172,8 @@
 
         // CONFIGURACIÓN DINÁMICA
         let firebaseConfig;
-        let appId;
+        let rootCollection = 'projects'; // Nueva colección raíz
+        let appIdDoc; // Nombre del documento del proyecto
 
         firebaseConfig = {
             apiKey: "AIzaSyCAd_vju_x9wuhGtZJvvoWpt9JbRUwB63k",
@@ -184,8 +185,8 @@
             appId: "1:27193285455:web:6cb0f8ac14f0e36fb0433a"
         };
         
-        // Usamos el ID del proyecto como nombre de carpeta para sincronizar con tus reglas
-        appId = 'sencillo-app-40a36';
+        // ESTRUCTURA CORREGIDA: projects (Col) -> sencillo-app-40a36 (Doc) -> ...
+        appIdDoc = 'sencillo-app-40a36';
 
         // Inicializar Firebase
         let app, auth, db;
@@ -453,8 +454,10 @@
             const runConnectionTest = async () => {
                 setTestStatus("Probando...");
                 try {
-                    // Try to write a timestamp to a test document
-                    const testRef = doc(db, appId, 'users', userId, 'system', 'connection_test');
+                    // Path corregido: rootCollection/appIdDoc/users/userId/system/connection_test
+                    // projects -> sencillo-app-40a36 -> users -> UID -> system -> connection_test
+                    // 6 segmentos = Válido
+                    const testRef = doc(db, rootCollection, appIdDoc, 'users', userId, 'system', 'connection_test');
                     await setDoc(testRef, { 
                         last_check: new Date().toISOString(),
                         status: "ok",
@@ -517,7 +520,7 @@
                         React.createElement('p', { className: "font-bold uppercase text-gray-400" }, "Diagnóstico de Conexión (FORZADA)"),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "User ID:"), React.createElement('span', { className: "font-mono" }, userId ? userId.slice(0,8) + "..." : "No auth")),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "Project:"), React.createElement('span', { className: "font-mono" }, firebaseConfig.projectId)),
-                        React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "App ID (Path):"), React.createElement('span', { className: "font-mono" }, appId)),
+                        React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "App ID Path:"), React.createElement('span', { className: "font-mono" }, `${rootCollection}/${appIdDoc}`)),
                         
                         React.createElement('div', { className: "pt-2 border-t border-white/5" },
                             React.createElement('button', { 
@@ -759,12 +762,13 @@
                 const transactionData = { type, segment, amount: parseFloat(amount), currency, originalRate: parseFloat(finalRate), amountUSD: calculatedUSD, category, description, date: finalDate, profileId: 'personal' };
 
                 try {
+                    // Path corregido: rootCollection/appIdDoc/users/userId/transactions/ID
                     if (isEditing) {
-                        await setDoc(doc(db, appId, 'users', userId, 'transactions', initialData.id), transactionData, { merge: true });
+                        await setDoc(doc(db, rootCollection, appIdDoc, 'users', userId, 'transactions', initialData.id), transactionData, { merge: true });
                     } else {
-                        await addDoc(collection(db, appId, 'users', userId, 'transactions'), transactionData);
+                        await addDoc(collection(db, rootCollection, appIdDoc, 'users', userId, 'transactions'), transactionData);
                         if (recurrence !== 'none') {
-                            await addDoc(collection(db, appId, 'users', userId, 'recurring'), { ...transactionData, frequency: recurrence, startDate: finalDate });
+                            await addDoc(collection(db, rootCollection, appIdDoc, 'users', userId, 'recurring'), { ...transactionData, frequency: recurrence, startDate: finalDate });
                         }
                     }
                     onClose();
@@ -780,7 +784,8 @@
                 if (confirm("¿Estás seguro de eliminar este movimiento?")) {
                     setIsSaving(true);
                     try {
-                        await deleteDoc(doc(db, appId, 'users', userId, 'transactions', initialData.id));
+                        // Path corregido
+                        await deleteDoc(doc(db, rootCollection, appIdDoc, 'users', userId, 'transactions', initialData.id));
                         onClose();
                     } catch (error) {
                         alert("Error al eliminar: " + error.message);
@@ -1097,7 +1102,8 @@
                     return;
                 }
 
-                const ratesRef = doc(db, appId, 'users', user.uid, 'settings', 'rates');
+                // PATH CORREGIDO: projects (Col) -> sencillo... (Doc) -> users (Col) -> UID (Doc) -> settings (Col) -> rates (Doc)
+                const ratesRef = doc(db, rootCollection, appIdDoc, 'users', user.uid, 'settings', 'rates');
                 const unsubRates = onSnapshot(ratesRef, (doc) => { if (doc.exists()) setRates(doc.data()); }, (err) => handleSnapshotError(err, 'Rates'));
                 
                 getRatesFromAPI().then(async (newRates) => { 
@@ -1110,7 +1116,7 @@
                     } 
                 });
                 
-                const pnlRef = doc(db, appId, 'users', user.uid, 'settings', 'pnl');
+                const pnlRef = doc(db, rootCollection, appIdDoc, 'users', user.uid, 'settings', 'pnl');
                 const unsubPnl = onSnapshot(pnlRef, (doc) => { 
                     if (doc.exists()) setPnlStructure(doc.data()); 
                     else {
@@ -1119,17 +1125,17 @@
                     }
                 }, (err) => handleSnapshotError(err, 'PnL Config'));
                 
-                const budgetsRef = doc(db, appId, 'users', user.uid, 'settings', 'budgets');
+                const budgetsRef = doc(db, rootCollection, appIdDoc, 'users', user.uid, 'settings', 'budgets');
                 const unsubBudgets = onSnapshot(budgetsRef, (doc) => { if (doc.exists()) setBudgets(doc.data()); }, (err) => handleSnapshotError(err, 'Budgets'));
 
-                const q = query(collection(db, appId, 'users', user.uid, 'transactions'));
+                const q = query(collection(db, rootCollection, appIdDoc, 'users', user.uid, 'transactions'));
                 const unsubTrans = onSnapshot(q, (snapshot) => { 
                     let data = snapshot.docs.map(d => ({id: d.id, ...d.data()})).filter(t => t.profileId === 'personal');
                     data.sort((a, b) => new Date(b.date) - new Date(a.date)); 
                     setTransactions(data); 
                 }, (err) => handleSnapshotError(err, 'Transactions'));
                 
-                const qRec = query(collection(db, appId, 'users', user.uid, 'recurring'));
+                const qRec = query(collection(db, rootCollection, appIdDoc, 'users', user.uid, 'recurring'));
                 const unsubRec = onSnapshot(qRec, (snapshot) => { 
                     let data = snapshot.docs.map(d => ({id: d.id, ...d.data()})).filter(t => t.profileId === 'personal');
                     setRecurringRules(data); 
@@ -1141,21 +1147,21 @@
             const updateRates = async (newRates) => { 
                 if(!user) return; 
                 try {
-                    await setDoc(doc(db, appId, 'users', user.uid, 'settings', 'rates'), { bcv: parseFloat(newRates.bcv), parallel: parseFloat(newRates.parallel) }); 
+                    await setDoc(doc(db, rootCollection, appIdDoc, 'users', user.uid, 'settings', 'rates'), { bcv: parseFloat(newRates.bcv), parallel: parseFloat(newRates.parallel) }); 
                 } catch(e) { alert("Error guardando tasas: " + e.message); }
             };
             
             const updatePnl = async (newPnl) => { 
                 if(!user) return; 
                 try {
-                    await setDoc(doc(db, appId, 'users', user.uid, 'settings', 'pnl'), newPnl); 
+                    await setDoc(doc(db, rootCollection, appIdDoc, 'users', user.uid, 'settings', 'pnl'), newPnl); 
                 } catch(e) { alert("Error guardando config: " + e.message); }
             };
             
             const updateBudgets = async (newBudgets) => { 
                 if(!user) return; 
                 try {
-                    await setDoc(doc(db, appId, 'users', user.uid, 'settings', 'budgets'), newBudgets); 
+                    await setDoc(doc(db, rootCollection, appIdDoc, 'users', user.uid, 'settings', 'budgets'), newBudgets); 
                 } catch(e) { alert("Error guardando presupuesto: " + e.message); }
             };
 
