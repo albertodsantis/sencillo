@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo</title>
+    <title>Sencillo v3.0</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -115,7 +115,7 @@
             Wallet, TrendingUp, TrendingDown, Plus, Settings, 
             Calendar, DollarSign, RefreshCw, X, Save, ArrowRightLeft,
             LogOut, ChevronDown, Filter, Home, History, PieChart, Trash2, List, FileSpreadsheet,
-            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug
+            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database
         } from 'lucide-react';
 
         // --- FIREBASE ---
@@ -339,7 +339,7 @@
                     await signInWithPopup(auth, provider);
                 } catch (error) {
                     console.error("Google Auth Error:", error);
-                    setErrorMsg("Error al iniciar con Google. Intenta con email.");
+                    setErrorMsg("Google Auth falló (común en vistas previas). Por favor usa Email/Contraseña.");
                 }
             };
             
@@ -464,7 +464,7 @@
                         platform: navigator.userAgent
                     });
                     setTestStatus("✅ ÉXITO: Conexión y escritura funcionan.");
-                    alert("¡Conexión exitosa! La base de datos responde y permite escribir.");
+                    alert("¡Conexión exitosa! La base de datos responde y permite escribir. ¡Ya puedes usar la app!");
                 } catch (e) {
                     console.error(e);
                     setTestStatus("❌ ERROR: " + e.code);
@@ -474,7 +474,10 @@
 
             return React.createElement('div', { className: "h-full flex flex-col pt-[env(safe-area-inset-top)] bg-app-bg" },
                 React.createElement('div', { className: "p-6" },
-                    React.createElement('h2', { className: "text-3xl font-bold text-white mb-1 tracking-tight" }, "Configuración"),
+                    React.createElement('div', { className: "flex justify-between items-center mb-1" },
+                        React.createElement('h2', { className: "text-3xl font-bold text-white tracking-tight" }, "Configuración"),
+                        React.createElement('span', { className: "text-xs font-bold text-brand bg-brand/10 px-2 py-1 rounded-md" }, "v3.0")
+                    ),
                     React.createElement('p', { className: "text-gray-400 font-light" }, "Personaliza tus categorías")
                 ),
 
@@ -517,16 +520,19 @@
                     
                     // --- DIAGNÓSTICO PARA ALBERTO ---
                     React.createElement('div', { className: "bg-gray-900/50 p-4 rounded-2xl border border-white/5 text-xs text-gray-500 space-y-3" },
-                        React.createElement('p', { className: "font-bold uppercase text-gray-400" }, "Diagnóstico de Conexión (FORZADA)"),
+                        React.createElement('div', { className: "flex items-center gap-2 mb-2" },
+                            React.createElement(Database, { size: 14, className: "text-brand" }),
+                            React.createElement('p', { className: "font-bold uppercase text-gray-300" }, "Diagnóstico de Conexión")
+                        ),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "User ID:"), React.createElement('span', { className: "font-mono" }, userId ? userId.slice(0,8) + "..." : "No auth")),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "Project:"), React.createElement('span', { className: "font-mono" }, firebaseConfig.projectId)),
-                        React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "App ID Path:"), React.createElement('span', { className: "font-mono" }, `${rootCollection}/${appIdDoc}`)),
+                        React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "Path:"), React.createElement('span', { className: "font-mono text-brand" }, `${rootCollection}/${appIdDoc}`)),
                         
                         React.createElement('div', { className: "pt-2 border-t border-white/5" },
                             React.createElement('button', { 
                                 onClick: runConnectionTest,
-                                className: "w-full py-2 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl font-bold hover:bg-indigo-500/30 transition-colors"
-                            }, "PROBAR ESCRITURA EN DB")
+                                className: "w-full py-3 bg-brand/20 text-brand border border-brand/30 rounded-xl font-bold hover:bg-brand/30 transition-colors flex items-center justify-center gap-2"
+                            }, React.createElement(ShieldCheck, { size: 16 }), "PROBAR ESCRITURA EN DB")
                         ),
                         testStatus && React.createElement('p', { className: `text-center font-bold ${testStatus.includes('ERROR') ? 'text-red-400' : 'text-emerald-400'}` }, testStatus)
                     )
