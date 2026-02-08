@@ -512,7 +512,17 @@
                 e.preventDefault(); if (!amount || !category) return; setIsSaving(true); 
                 const finalRate = currency === 'USD' ? 1 : (rateType === 'bcv' ? rates.bcv : (rateType === 'parallel' ? rates.parallel : customRate));
                 const type = SEGMENTS[segment].type;
-                const finalDate = new Date(date + "T12:00:00").toISOString();
+                
+                let finalDateObj = new Date(date + "T12:00:00");
+                if (isEditing) {
+                    const prev = new Date(initialData.date);
+                    if (getLocalDateString(prev) === date) finalDateObj = prev;
+                } else {
+                    const now = new Date();
+                    if (getLocalDateString(now) === date) finalDateObj = now;
+                }
+                const finalDate = finalDateObj.toISOString();
+
                 const transactionData = { type, segment, amount: parseFloat(amount), currency, originalRate: parseFloat(finalRate), amountUSD: calculatedUSD, category, description, date: finalDate, profileId: 'personal' };
                 try {
                     if (isEditing) await setDoc(doc(db, ROOT_COLLECTION, projectDocId, 'users', userId, 'transactions', initialData.id), transactionData, { merge: true });
@@ -695,7 +705,7 @@
                      if (!searchQuery) return true;
                      const query = searchQuery.toLowerCase();
                      return (t.description && t.description.toLowerCase().includes(query)) || t.category.toLowerCase().includes(query);
-                 }).sort((a, b) => new Date(b.date) - new Date(a.date)); // Added explicit sort here for robustness
+                 }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
              }, [transactions, currentDate, searchQuery]);
 
              const prevMonth = () => { const newDate = new Date(currentDate); newDate.setMonth(newDate.getMonth() - 1); setCurrentDate(newDate); };
@@ -733,7 +743,7 @@
                     ), 
                     React.createElement('div', { className: "text-right" }, 
                         React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `${t.type === 'income' ? '+' : '-'}${(t.amountUSD || 0).toFixed(2)}`), 
-                        React.createElement('span', { className: "text-[10px] text-gray-500 font-mono font-bold bg-black/30 px-1.5 py-0.5 rounded ml-auto w-fit block mt-1" }, t.currency === 'USD' ? 'USD' : `Bs ${t.amount}`)
+                        React.createElement('span', { className: "text-xs text-gray-500 font-mono font-bold bg-black/30 px-1.5 py-0.5 rounded ml-auto w-fit block mt-1" }, t.currency === 'USD' ? 'USD' : `Bs ${t.amount}`)
                     )
                 )))
             );
@@ -801,7 +811,7 @@
                 const unsubRates = onSnapshot(doc(userRef, 'settings', 'rates'), (d) => { if (d.exists()) setRates(d.data()); });
                 const unsubPnl = onSnapshot(doc(userRef, 'settings', 'pnl'), (d) => { if (d.exists()) setPnlStructure(d.data()); else setDoc(doc(userRef, 'settings', 'pnl'), DEFAULT_PNL); });
                 const unsubBudgets = onSnapshot(doc(userRef, 'settings', 'budgets'), (d) => { if (d.exists()) setBudgets(d.data()); });
-                const unsubTrans = onSnapshot(query(collection(userRef, 'transactions')), (s) => setTransactions(s.docs.map(d => ({id: d.id, ...d.data()})).filter(t => t.profileId === 'personal').sort((a, b) => new Date(b.date) - new Date(a.date))));
+                const unsubTrans = onSnapshot(query(collection(userRef, 'transactions')), (s) => setTransactions(s.docs.map(d => ({id: d.id, ...d.data()})).filter(t => t.profileId === 'personal').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())));
                 const unsubRec = onSnapshot(query(collection(userRef, 'recurring')), (s) => setRecurringRules(s.docs.map(d => ({id: d.id, ...d.data()})).filter(t => t.profileId === 'personal')));
                 
                 getRatesFromAPI().then(async (r) => { if (r?.bcv) try { await setDoc(doc(userRef, 'settings', 'rates'), r, { merge: true }); } catch(e) {} });
