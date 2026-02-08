@@ -455,8 +455,6 @@
                 setTestStatus("Probando...");
                 try {
                     // Path corregido: rootCollection/appIdDoc/users/userId/system/connection_test
-                    // projects -> sencillo-app-40a36 -> users -> UID -> system -> connection_test
-                    // 6 segmentos = Válido
                     const testRef = doc(db, rootCollection, appIdDoc, 'users', userId, 'system', 'connection_test');
                     await setDoc(testRef, { 
                         last_check: new Date().toISOString(),
@@ -540,7 +538,6 @@
             );
         };
 
-        // ... (BudgetView se mantiene igual)
         const BudgetView = ({ pnlStructure, budgets, onUpdateBudgets, transactions }) => {
             const [localBudgets, setLocalBudgets] = useState(budgets || {});
             const [isSaved, setIsSaved] = useState(false);
@@ -699,12 +696,12 @@
 
                     React.createElement('div', { className: "space-y-4 mb-6" },
                          React.createElement('div', { className: "p-4 bg-dark-surface rounded-2xl border border-gray-800" },
-                            React.createElement('label', { className: "text-xs text-gray-500 font-bold block mb-2" }, "BCV"),
-                            React.createElement('input', { type: "number", value: tempRates.bcv, onChange: e => setTempRates({...tempRates, bcv: e.target.value}), className: "w-full bg-transparent text-3xl font-black text-white focus:outline-none placeholder-gray-700" })
+                           React.createElement('label', { className: "text-xs text-gray-500 font-bold block mb-2" }, "BCV"),
+                           React.createElement('input', { type: "number", value: tempRates.bcv, onChange: e => setTempRates({...tempRates, bcv: e.target.value}), className: "w-full bg-transparent text-3xl font-black text-white focus:outline-none placeholder-gray-700" })
                          ),
                          React.createElement('div', { className: "p-4 bg-dark-surface rounded-2xl border border-gray-800" },
-                            React.createElement('label', { className: "text-xs text-gray-500 font-bold block mb-2" }, "PARALELO"),
-                            React.createElement('input', { type: "number", value: tempRates.parallel, onChange: e => setTempRates({...tempRates, parallel: e.target.value}), className: "w-full bg-transparent text-3xl font-black text-white focus:outline-none placeholder-gray-700" })
+                           React.createElement('label', { className: "text-xs text-gray-500 font-bold block mb-2" }, "PARALELO"),
+                           React.createElement('input', { type: "number", value: tempRates.parallel, onChange: e => setTempRates({...tempRates, parallel: e.target.value}), className: "w-full bg-transparent text-3xl font-black text-white focus:outline-none placeholder-gray-700" })
                          )
                     ),
                     
@@ -921,7 +918,7 @@
                          user && user.photoURL ? 
                             React.createElement('img', { src: user.photoURL, alt: "User", className: "w-8 h-8 rounded-full border border-gray-700" }) :
                             React.createElement('div', { className: "w-8 h-8 bg-brand/20 rounded-full flex items-center justify-center text-brand font-bold text-xs" }, (user?.email || "U").charAt(0).toUpperCase()),
-                         
+                          
                         React.createElement('button', { onClick: onLogout, className: "w-10 h-10 bg-dark-card text-gray-400 rounded-full flex items-center justify-center hover:text-white border border-white/10 transition-colors" }, React.createElement(LogOut, { size: 18 }))
                     )
                 ),
@@ -1038,8 +1035,6 @@
         };
         
         const PnLReportView = ({ transactions, pnlStructure, recurringRules }) => {
-            // ... (Report view sin cambios sustanciales)
-            // ... Mismo código que antes ...
             const [granularity, setGranularity] = useState('monthly');
             const [startDate, setStartDate] = useState(() => { const d = new Date(); d.setDate(1); return getLocalDateString(d); });
             const [endDate, setEndDate] = useState(() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return getLocalDateString(d); });
@@ -1196,7 +1191,7 @@
             return React.createElement(ErrorBoundary, null, 
                 React.createElement('div', { className: "h-screen w-full bg-app-bg flex flex-col text-white" },
                     React.createElement('div', { className: "flex-1 overflow-y-auto no-scrollbar" },
-                        currentTab === 'home' ? React.createElement(HomeView, { rates, transactions, onUpdateRate: updateRates, onOpenAdd: () => setShowTransactionModal(true), onEditTransaction: handleEditTransaction, onOpenConfig: () => setShowConfigModal(true), user, onLogout: handleLogout }) :
+                        currentTab === 'home' ? React.createElement(HomeView, { rates, transactions, onUpdateRate: updateRates, onOpenAdd: () => setShowTransactionModal(true), onEditTransaction: handleEditTransaction, user, onLogout: handleLogout }) :
                         currentTab === 'history' ? React.createElement(HistoryView, { transactions, onEditTransaction: handleEditTransaction }) :
                         currentTab === 'report' ? React.createElement(PnLReportView, { transactions, pnlStructure, recurringRules }) : 
                         currentTab === 'budget' ? React.createElement(BudgetView, { pnlStructure, budgets, onUpdateBudgets: updateBudgets, transactions }) :
@@ -1234,8 +1229,7 @@
                         }, React.createElement(Settings, { size: 28, strokeWidth: currentTab === 'config' ? 2.5 : 2 }))
                     ),
 
-                    showTransactionModal && React.createElement(TransactionModal, { onClose: handleCloseModal, rates, userId: user.uid, pnlStructure: pnlStructure, profileId: 'personal', initialData: editingTransaction }),
-                    showConfigModal && React.createElement(ConfigView, { onClose: () => setShowConfigModal(false), pnlData: pnlStructure, onUpdatePnl: updatePnl, userId: user.uid })
+                    showTransactionModal && React.createElement(TransactionModal, { onClose: handleCloseModal, rates, userId: user.uid, pnlStructure: pnlStructure, profileId: 'personal', initialData: editingTransaction })
                 )
             );
         };
