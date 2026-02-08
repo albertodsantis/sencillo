@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v3.2</title>
+    <title>Sencillo v3.3</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -196,7 +196,7 @@
                 console.log("Usando Configuración de Canvas");
                 return JSON.parse(__firebase_config);
              }
-             // Producción (Netlify)
+             // Producción (Netlify) - COPIADA DE TUS CAPTURAS
              console.log("Usando Configuración Hardcoded (Prod)");
              return {
                   apiKey: "AIzaSyCAd_vju_x9wuhGtZJvvoWpt9JbRUwB63k",
@@ -215,6 +215,9 @@
         // IDs y Rutas
         const appId = isCanvasEnv ? __app_id : 'sencillo-app-40a36';
         const rootCollection = isCanvasEnv ? 'artifacts' : 'projects'; 
+        
+        // NOMBRE DE LA BASE DE DATOS (CRÍTICO: NO es '(default)', es tu ID de proyecto)
+        const databaseId = "sencillo-app-40a36";
 
         // Inicializar Firebase
         let app, auth, db;
@@ -222,15 +225,17 @@
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             
-            // --- FIX CRÍTICO: SOLO MEMORIA PURA ---
-            // Eliminamos experimentalForceLongPolling y usamos versión 10.8.0
+            // --- FIX CRÍTICO: CONECTAR A DB NOMBRADA ---
+            // Tu error "database (default) does not exist" significa que tu DB no es la default.
+            // Tu captura muestra que se llama "sencillo-app-40a36".
             try {
+                // initializeFirestore(app, settings, databaseId)
                 db = initializeFirestore(app, { 
                     localCache: memoryLocalCache()
-                });
-                console.log("Modo DB: Memoria Pura (v10.8.0)");
+                }, databaseId);
+                console.log(`Modo DB: Conectado a base de datos "${databaseId}"`);
             } catch (e) {
-                console.error("Error inicializando DB:", e);
+                console.error("Error conectando a DB nombrada, fallback:", e);
                 db = getFirestore(app); 
             }
             
@@ -268,7 +273,7 @@
                     )
                 ),
                 React.createElement('div', { className: "pt-2 text-gray-500 text-[10px]" }, 
-                    `DB: ${rootCollection}/${appId} | v3.2`
+                    `DB ID: ${databaseId} | Path: ${rootCollection}`
                 )
             );
         };
@@ -562,7 +567,7 @@
                 React.createElement('div', { className: "p-6" },
                     React.createElement('div', { className: "flex justify-between items-center mb-1" },
                         React.createElement('h2', { className: "text-3xl font-bold text-white tracking-tight" }, "Configuración"),
-                        React.createElement('span', { className: "text-xs font-bold text-brand bg-brand/10 px-2 py-1 rounded-md" }, "v3.2")
+                        React.createElement('span', { className: "text-xs font-bold text-brand bg-brand/10 px-2 py-1 rounded-md" }, "v3.3")
                     ),
                     React.createElement('p', { className: "text-gray-400 font-light" }, "Personaliza tus categorías")
                 ),
@@ -611,6 +616,7 @@
                         ),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "Project:"), React.createElement('span', { className: "font-mono" }, firebaseConfig.projectId)),
                         React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "Collection:"), React.createElement('span', { className: "font-mono text-brand" }, rootCollection)),
+                        React.createElement('div', { className: "flex justify-between" }, React.createElement('span', null, "Database ID:"), React.createElement('span', { className: "font-mono text-brand" }, databaseId)),
                         
                         React.createElement('div', { className: "pt-2 border-t border-white/5" },
                             React.createElement('button', { 
@@ -851,25 +857,19 @@
                 const transactionData = { type, segment, amount: parseFloat(amount), currency, originalRate: parseFloat(finalRate), amountUSD: calculatedUSD, category, description, date: finalDate, profileId: 'personal' };
 
                 try {
-                    // Path corregido para reglas de seguridad: /artifacts/appId/users/userId/transactions
-                    const userTransactionsRef = collection(db, rootCollection, appId, 'users', userId, 'transactions');
-                    const userRecurringRef = collection(db, rootCollection, appId, 'users', userId, 'recurring');
-
-                    console.log("Guardando transacción en:", userTransactionsRef.path);
-
+                    // Path corregido: rootCollection/appIdDoc/users/userId/transactions/ID
                     if (isEditing) {
-                        await setDoc(doc(userTransactionsRef, initialData.id), transactionData, { merge: true });
+                        await setDoc(doc(db, rootCollection, appIdDoc, 'users', userId, 'transactions', initialData.id), transactionData, { merge: true });
                     } else {
-                        await addDoc(userTransactionsRef, transactionData);
+                        await addDoc(collection(db, rootCollection, appIdDoc, 'users', userId, 'transactions'), transactionData);
                         if (recurrence !== 'none') {
-                            await addDoc(userRecurringRef, { ...transactionData, frequency: recurrence, startDate: finalDate });
+                            await addDoc(collection(db, rootCollection, appIdDoc, 'users', userId, 'recurring'), { ...transactionData, frequency: recurrence, startDate: finalDate });
                         }
                     }
-                    console.log("Transacción guardada OK");
                     onClose();
                 } catch (error) {
                     console.error("Error saving transaction:", error);
-                    alert("¡Error al guardar en Firebase! " + error.message); 
+                    alert("¡Error al guardar en Firebase! " + error.message); // ALERTA VISIBLE
                 } finally {
                     setIsSaving(false); 
                 }
@@ -879,7 +879,8 @@
                 if (confirm("¿Estás seguro de eliminar este movimiento?")) {
                     setIsSaving(true);
                     try {
-                        await deleteDoc(doc(db, rootCollection, appId, 'users', userId, 'transactions', initialData.id));
+                        // Path corregido
+                        await deleteDoc(doc(db, rootCollection, appIdDoc, 'users', userId, 'transactions', initialData.id));
                         onClose();
                     } catch (error) {
                         alert("Error al eliminar: " + error.message);
@@ -898,6 +899,7 @@
                         React.createElement('button', { onClick: onClose, className: "p-3 bg-dark-highlight rounded-full text-gray-400 hover:text-white transition-colors" }, React.createElement(X, { size: 24 }))
                     ),
                     
+                    // FIXED LAYOUT: Scrollable pills for segments
                     React.createElement('div', { className: "flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide" }, 
                         Object.keys(SEGMENTS).map(key => 
                             React.createElement('button', { 
@@ -910,6 +912,7 @@
                     
                     React.createElement('form', { onSubmit: handleSubmit, className: "space-y-6" },
                         
+                        // Fila combinada: Monto + Moneda
                         React.createElement('div', { className: "flex gap-3" },
                             React.createElement('div', { className: "relative flex-1" },
                                 React.createElement('span', { className: "absolute left-5 top-5 text-gray-500 font-bold" }, currency === 'USD' ? '$' : 'Bs'),
@@ -918,6 +921,7 @@
                             React.createElement('select', { value: currency, onChange: e => setCurrency(e.target.value), className: "bg-dark-surface text-white font-bold rounded-2xl px-4 focus:outline-none border border-white/10" }, React.createElement('option', { value: "VES" }, "Bs"), React.createElement('option', { value: "USD" }, "USD"))
                         ),
 
+                        // FIXED LAYOUT: Grid for Date and Concept to avoid overlap
                         React.createElement('div', { className: "grid grid-cols-12 gap-3" },
                              React.createElement('div', { className: "col-span-5" },
                                 React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-1 tracking-wider mb-1 block" }, "Fecha"),
