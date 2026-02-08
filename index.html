@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v3.1</title>
+    <title>Sencillo v3.2</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -118,8 +118,8 @@
             Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal
         } from 'lucide-react';
 
-        // --- FIREBASE (Versión 10.14.1 - ESTABLE) ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        // --- FIREBASE (Versión 10.8.0 - GOLDEN STABLE) ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
             getAuth, 
             signInWithPopup, 
@@ -130,12 +130,11 @@
             signOut,
             signInWithEmailAndPassword,
             createUserWithEmailAndPassword
-        } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { 
             getFirestore, 
             initializeFirestore, 
             memoryLocalCache, 
-            persistentLocalCache,
             collection, 
             doc, 
             setDoc, 
@@ -147,8 +146,9 @@
             deleteDoc, 
             updateDoc, 
             where,
-            enableIndexedDbPersistence
-        } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+            terminate,
+            clearIndexedDbPersistence
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // --- SISTEMA DE LOGS INTERNO PARA DEBUG ---
         const logs = [];
@@ -166,7 +166,7 @@
         console.log = (...args) => addLog('info', ...args);
         console.error = (...args) => addLog('error', ...args);
 
-        // --- ERROR BOUNDARY (Restaurado) ---
+        // --- ERROR BOUNDARY ---
         class ErrorBoundary extends Component {
             constructor(props) {
                 super(props);
@@ -211,7 +211,6 @@
 
         const firebaseConfig = getFirebaseConfig();
         const isCanvasEnv = typeof __app_id !== 'undefined';
-        const isIframe = window.self !== window.top;
         
         // IDs y Rutas
         const appId = isCanvasEnv ? __app_id : 'sencillo-app-40a36';
@@ -223,14 +222,13 @@
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             
-            // --- FIX CRÍTICO: LONG POLLING + MEMORY CACHE ---
-            // Esto es la "medicina fuerte" para conexiones difíciles
+            // --- FIX CRÍTICO: SOLO MEMORIA PURA ---
+            // Eliminamos experimentalForceLongPolling y usamos versión 10.8.0
             try {
                 db = initializeFirestore(app, { 
-                    localCache: memoryLocalCache(),
-                    experimentalForceLongPolling: true // Fuerza HTTP en vez de WebSockets (más lento pero infalible)
+                    localCache: memoryLocalCache()
                 });
-                console.log("Modo DB: Memoria + Long Polling (Estabilidad Máxima)");
+                console.log("Modo DB: Memoria Pura (v10.8.0)");
             } catch (e) {
                 console.error("Error inicializando DB:", e);
                 db = getFirestore(app); 
@@ -270,7 +268,7 @@
                     )
                 ),
                 React.createElement('div', { className: "pt-2 text-gray-500 text-[10px]" }, 
-                    `DB: ${rootCollection}/${appId} | LongPolling: Active`
+                    `DB: ${rootCollection}/${appId} | v3.2`
                 )
             );
         };
@@ -536,7 +534,7 @@
                 setTestStatus("Probando...");
                 console.log("Iniciando prueba de escritura...");
                 
-                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("La red tarda demasiado (Timeout)")), 8000));
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("La red tarda demasiado (Timeout)")), 15000));
                 
                 try {
                     const testRef = doc(db, rootCollection, appId, 'users', userId, 'system', 'connection_test');
@@ -564,7 +562,7 @@
                 React.createElement('div', { className: "p-6" },
                     React.createElement('div', { className: "flex justify-between items-center mb-1" },
                         React.createElement('h2', { className: "text-3xl font-bold text-white tracking-tight" }, "Configuración"),
-                        React.createElement('span', { className: "text-xs font-bold text-brand bg-brand/10 px-2 py-1 rounded-md" }, "v3.1")
+                        React.createElement('span', { className: "text-xs font-bold text-brand bg-brand/10 px-2 py-1 rounded-md" }, "v3.2")
                     ),
                     React.createElement('p', { className: "text-gray-400 font-light" }, "Personaliza tus categorías")
                 ),
