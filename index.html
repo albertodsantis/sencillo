@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v4.5 Premium</title>
+    <title>Sencillo v4.6 Premium</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,10 +16,10 @@
                 extend: {
                     colors: {
                         dark: {
-                            base: '#020617',    // Slate 950 (Fondo Principal)
-                            surface: '#0f172a', // Slate 900 (Paneles secundarios)
-                            card: '#1e293b',    // Slate 800 (Tarjetas flotantes)
-                            highlight: '#334155', // Slate 700 (Inputs/Hovers)
+                            base: '#020617',    // Slate 950
+                            surface: '#0f172a', // Slate 900
+                            card: '#1e293b',    // Slate 800
+                            highlight: '#334155', // Slate 700
                         },
                         brand: {
                             light: '#34d399', // Emerald 400
@@ -32,7 +32,7 @@
                         sans: ['Outfit', 'sans-serif'],
                     },
                     boxShadow: {
-                        'neon': '0 0 20px -5px rgba(16, 185, 129, 0.3)', // Brillo verde suave
+                        'neon': '0 0 20px -5px rgba(16, 185, 129, 0.3)',
                         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
                         'inner-light': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.1)',
                     },
@@ -536,12 +536,12 @@
 
             return React.createElement('div', { className: "fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-end sm:items-center justify-center animate-fade-in" },
                 React.createElement('div', { className: "glass-panel-premium w-full max-w-md p-6 rounded-t-[2.5rem] sm:rounded-[2.5rem] max-h-[90vh] overflow-y-auto animate-slide-up" },
-                    React.createElement('div', { className: "flex justify-between items-center mb-4" }, 
+                    React.createElement('div', { className: "flex justify-between items-center mb-2" }, 
                         React.createElement('h2', { className: "text-2xl font-bold text-white tracking-tight" }, isEditing ? "Editar" : "Nuevo Movimiento"), 
                         React.createElement('button', { onClick: onClose, className: "p-3 bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors" }, React.createElement(X, { size: 24 }))
                     ),
                     
-                    React.createElement('div', { className: "flex gap-2 overflow-x-auto pb-1 mb-1 scrollbar-hide justify-start" }, 
+                    React.createElement('div', { className: "flex gap-2 overflow-x-auto pb-2 mb-0 scrollbar-hide justify-start" }, 
                         Object.keys(SEGMENTS).map(key => 
                             React.createElement('button', { 
                                 key: key, onClick: () => setSegment(key), 
@@ -553,7 +553,7 @@
                     React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
                         
                         // INPUT PRINCIPAL GIGANTE
-                        React.createElement('div', { className: "flex flex-col items-center justify-center mb-2" },
+                        React.createElement('div', { className: "flex flex-col items-center justify-center" },
                             React.createElement('div', { className: "relative w-full" },
                                 React.createElement('input', { 
                                     type: "number", step: "0.01", placeholder: "0.00", value: amount, onChange: e => setAmount(e.target.value), 
@@ -569,13 +569,13 @@
                             )
                         ),
 
-                        // Fila FECHA y CATEGORÍA usando FLEXBOX para evitar solapamiento
-                        React.createElement('div', { className: "flex gap-3" },
-                             React.createElement('div', { className: "w-[140px] flex-none" }, // Ancho fijo seguro para fecha
+                        // Fila FECHA y CATEGORÍA usando GRID para separación perfecta (50% each)
+                        React.createElement('div', { className: "grid grid-cols-2 gap-4" },
+                             React.createElement('div', null,
                                 React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 mb-1 block" }, "Fecha"),
                                 React.createElement('input', { type: "date", value: date, onChange: e => setDate(e.target.value), className: "w-full px-3 py-3 bg-dark-surface/50 rounded-2xl text-white outline-none border border-white/5 font-medium text-sm text-center" })
                              ),
-                             React.createElement('div', { className: "flex-1" }, // Categoría ocupa el resto
+                             React.createElement('div', null,
                                 React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 mb-1 block" }, "Categoría"),
                                 React.createElement('select', { value: category, onChange: e => setCategory(e.target.value), className: "w-full px-3 py-3 bg-dark-surface/50 text-white rounded-2xl outline-none border border-white/5 font-medium text-sm appearance-none" }, (pnlStructure && pnlStructure[segment] ? pnlStructure[segment] : []).map(c => React.createElement('option', { key: c, value: c }, c)))
                              )
