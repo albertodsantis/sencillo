@@ -246,9 +246,9 @@
                 try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch (error) { setErrorMsg("Error Google Auth"); }
             };
             
-            return React.createElement('div', { className: "min-h-[100dvh] flex flex-col items-center justify-center p-6 pt-32 bg-app-bg text-white" },
-                React.createElement('div', { className: "w-full max-w-sm" },
-                    React.createElement('div', { className: "text-center mb-10" },
+            return React.createElement('div', { className: "min-h-[100dvh] flex flex-col items-center justify-center p-6 bg-app-bg text-white" },
+                React.createElement('div', { className: "w-full max-w-sm py-12" },
+                    React.createElement('div', { className: "text-center mb-8" },
                         React.createElement('div', { className: "w-24 h-24 bg-card-gradient rounded-3xl rotate-3 flex items-center justify-center mx-auto mb-6 shadow-neon text-white" }, React.createElement(Wallet, { size: 48 })),
                         React.createElement('h1', { className: "text-4xl font-black mb-2 tracking-tight" }, "Sencillo"),
                         React.createElement('p', { className: "text-gray-400 text-lg font-light" }, "Tus cuentas claras")
@@ -265,8 +265,8 @@
                         ),
                         React.createElement(Button, { type: "submit", disabled: loading, className: "mt-6" }, loading ? React.createElement(Loader2, { className: "animate-spin" }) : (isSignUp ? "Registrarse" : "Entrar")),
                         React.createElement('button', { type: "button", onClick: handleGoogleLogin, className: "w-full py-3 bg-white text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors mt-4 btn-press" }, "Google"),
-                        React.createElement('div', { className: "mt-8 text-center" },
-                            React.createElement('button', { type: "button", onClick: () => { setIsSignUp(!isSignUp); setErrorMsg(null); }, className: "text-sm text-gray-400 hover:text-brand transition-colors" }, isSignUp ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Regístrate")
+                        React.createElement('div', { className: "mt-6 text-center" },
+                            React.createElement('button', { type: "button", onClick: () => { setIsSignUp(!isSignUp); setErrorMsg(null); }, className: "text-sm text-gray-400 hover:text-brand transition-colors p-2" }, isSignUp ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Regístrate")
                         )
                     )
                 )
