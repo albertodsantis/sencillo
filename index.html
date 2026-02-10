@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v5.4 Premium</title>
+    <title>Sencillo v5.4.2 Premium</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -669,7 +669,7 @@
                         React.createElement('div', { className: "flex flex-col items-center justify-center mt-0" },
                             React.createElement('div', { className: "relative w-full" },
                                 React.createElement('input', { 
-                                    type: "number", step: "0.01", placeholder: "0.00", value: amount, onChange: e => setAmount(e.target.value), 
+                                    type: "number", inputMode: "decimal", step: "0.01", placeholder: "0.00", value: amount, onChange: e => setAmount(e.target.value), 
                                     className: "w-full bg-transparent text-center text-5xl font-black text-white placeholder-gray-700 focus:outline-none py-4" 
                                 }),
                                 React.createElement('span', { className: "block text-center text-sm font-bold text-gray-500 uppercase tracking-widest" }, currency === 'USD' ? 'Dólares (USD)' : 'Bolívares (VES)')
@@ -992,9 +992,10 @@
             // VISTA PANTALLA COMPLETA
             if (isFullScreen) {
                 return React.createElement('div', { className: "fixed inset-0 z-50 bg-dark-base flex flex-col h-full w-full animate-fade-in" },
-                    React.createElement('div', { className: "flex justify-between items-center p-4 bg-dark-surface border-b border-white/10 z-20 shadow-xl" },
+                    // AQUÍ ESTÁ EL CAMBIO PRINCIPAL: pt-14 para bajar el header
+                    React.createElement('div', { className: "flex justify-between items-center px-4 pb-4 pt-14 bg-dark-surface border-b border-white/10 z-20 shadow-xl" },
                          React.createElement('h2', { className: "text-lg font-bold text-white flex items-center gap-2" }, React.createElement(FileSpreadsheet, {size:20}), "Vista Exploración"),
-                         React.createElement('button', { onClick: toggleFullScreen, className: "p-2 bg-dark-highlight rounded-full text-white hover:bg-white/20" }, React.createElement(Minimize2, { size: 24 }))
+                         React.createElement('button', { onClick: toggleFullScreen, className: "p-3 bg-dark-highlight rounded-full text-white hover:bg-white/20 active:scale-90 transition-transform" }, React.createElement(Minimize2, { size: 24 }))
                     ),
                     React.createElement('div', { className: "flex-1 overflow-auto bg-dark-base relative touch-pan-x touch-pan-y" },
                          React.createElement('div', { 
