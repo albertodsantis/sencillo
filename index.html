@@ -93,7 +93,9 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* Ajuste de seguridad para el notch inferior de los móviles */
+        .safe-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 12px); }
         
         /* === ESTILOS PREMIUM === */
         .glass-panel-premium {
@@ -923,7 +925,7 @@
                         
                         React.createElement('div', { className: "flex-1" }),
                         React.createElement('div', { className: "text-center py-1" }, React.createElement('span', { className: "text-gray-500 text-xs font-medium" }, "Equivalente: "), React.createElement('span', { className: "text-xl font-bold text-brand-light ml-2" }, `$${calculatedUSD.toFixed(2)}`)),
-                        React.createElement('div', { className: "flex gap-3 pb-safe" }, 
+                        React.createElement('div', { className: "flex gap-3 safe-bottom" }, 
                             isEditing && React.createElement('button', { type: "button", onClick: handleDelete, disabled: isSaving, className: "p-4 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors border border-red-500/20" }, React.createElement(Trash2, { size: 24 })),
                             React.createElement(Button, { type: "submit", className: "flex-1", disabled: !isValid || isSaving }, isSaving ? "Guardando..." : (isEditing ? "Actualizar" : "Guardar"))
                         )
@@ -1208,7 +1210,7 @@
                             React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-flexible" }, "DISP. FLEXIBLE"), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-purple-500/10 text-right font-bold text-purple-400 border-b border-white/10" }, Math.round(reportData.flexibleAvailable[p.id]).toLocaleString()))),
                             React.createElement(React.Fragment, { key: 'gastos_variables' }, 
                                 React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-surface/50 font-bold text-white border-b border-white/5" }, SEGMENTS['gastos_variables'].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-surface/50 border-b border-white/5" }))), 
-                                Object.entries(reportData['gastos_variables'].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "p-4 text-gray-400 border-b border-white/5 pl-8" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
+                                Object.entries(reportData['gastos_variables'].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
                                 React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-card font-bold text-brand border-b border-white/10" }, `Total ${SEGMENTS['gastos_variables'].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-card text-right font-bold text-brand border-b border-white/10" }, Math.round(reportData['gastos_variables'].total[p.id]).toLocaleString())))
                             ),
                             React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-card font-bold text-white border-b border-white/10", style: { borderTop: '2px solid #333' } }, "TOTAL GASTOS (F+V)"), periods.map(p => { const totalF = reportData.gastos_fijos.total[p.id] || 0; const totalV = reportData.gastos_variables.total[p.id] || 0; return React.createElement('td', { key: p.id, className: "p-4 bg-dark-card text-right font-bold text-white border-b border-white/10", style: { borderTop: '2px solid #333' } }, Math.round(totalF + totalV).toLocaleString()); })),
@@ -1261,7 +1263,7 @@
                         currentTab === 'config' ? React.createElement(ConfigView, { pnlData: pnlStructure, onUpdatePnl: updatePnl, userId: user.uid }) :
                         currentTab === 'profile' ? React.createElement(ProfileView, { user, onBack: () => setCurrentTab('home'), onLogout: () => signOut(auth) }) : null
                     ),
-                    currentTab !== 'profile' && React.createElement('nav', { className: "glass-panel-premium border-t-0 rounded-t-[2rem] pb-safe pt-4 px-2 flex justify-around items-center fixed bottom-0 w-full shadow-2xl z-30" },
+                    currentTab !== 'profile' && React.createElement('nav', { className: "glass-panel-premium border-t-0 rounded-t-[2rem] safe-bottom pt-4 px-2 flex justify-around items-center fixed bottom-0 w-full shadow-2xl z-30" },
                         ['home', 'budget', 'history', 'report', 'config'].map(tab => 
                             React.createElement('button', { key: tab, onClick: () => setCurrentTab(tab), className: `p-4 rounded-2xl transition-all btn-press ${currentTab === tab ? 'text-brand bg-white/5' : 'text-gray-500'}` }, 
                                 React.createElement(tab === 'home' ? Home : tab === 'budget' ? PieChart : tab === 'history' ? History : tab === 'report' ? FileSpreadsheet : Settings, { size: 28, strokeWidth: currentTab === tab ? 2.5 : 2 })
