@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v5.4.2 Premium</title>
+    <title>Sencillo v5.4.3 Premium</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -743,7 +743,8 @@
 
             const prevMonth = () => { const newDate = new Date(currentDate); newDate.setMonth(newDate.getMonth() - 1); setCurrentDate(newDate); };
             const nextMonth = () => { const newDate = new Date(currentDate); newDate.setMonth(newDate.getMonth() + 1); setCurrentDate(newDate); };
-            const monthLabel = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            // FIX: Remove "de" from date string for cleaner look "FEBRERO 2026"
+            const monthLabel = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(' de ', ' ');
             const capitalizeFirst = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
             const dashboardData = useMemo(() => {
@@ -786,8 +787,8 @@
                     React.createElement('div', { className: "relative z-10 flex flex-col items-center text-center" },
                         
                         // FILA SUPERIOR: FLECHA - MES - FLECHA
-                        // AQUI ESTÁ EL CAMBIO DE LAS FLECHAS
-                        React.createElement('div', { className: "w-full flex justify-between items-center mb-2 -mx-6 px-2" }, 
+                        // FIX: Increased negative margin (-mx-8) and padding (px-6) to push arrows to the edges
+                        React.createElement('div', { className: "w-full flex justify-between items-center mb-2 -mx-8 px-6" }, 
                             // Botón Anterior
                             React.createElement('button', { onClick: prevMonth, className: "p-2 text-white/70 hover:text-white transition-colors active:scale-90" }, 
                                 React.createElement(ChevronLeft, { size: 32, strokeWidth: 3 })
