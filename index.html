@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v5.6 Premium</title>
+    <title>Sencillo v5.7 Premium</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -35,11 +35,13 @@
                         'neon': '0 0 20px -5px rgba(16, 185, 129, 0.3)',
                         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
                         'inner-light': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.1)',
+                        'danger': '0 0 20px -5px rgba(239, 68, 68, 0.3)',
                     },
                     backgroundImage: {
                         'card-gradient': 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
                         'app-bg': 'radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 40%)',
                         'bar-gradient': 'linear-gradient(90deg, #10b981 0%, #34d399 100%)',
+                        'danger-gradient': 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(153, 27, 27, 0.1) 100%)',
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
@@ -155,7 +157,7 @@
             Wallet, TrendingUp, TrendingDown, Plus, Settings, 
             Calendar, DollarSign, RefreshCw, X, Save, ArrowRightLeft,
             LogOut, ChevronDown, Filter, Home, History, PieChart, Trash2, List, FileSpreadsheet,
-            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal, Receipt, CreditCard, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, MapPin, Phone, HelpCircle
+            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal, Receipt, CreditCard, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, MapPin, Phone, HelpCircle, AlertTriangle
         } from 'lucide-react';
 
         // --- FIREBASE SETUP ---
@@ -1007,6 +1009,15 @@
                         React.createElement('div', null, 
                             React.createElement('input', { type: "text", value: description, onChange: e => setDescription(e.target.value), className: "w-full p-3 bg-dark-surface/50 text-white rounded-2xl focus:outline-none border border-white/5 font-medium text-sm", placeholder: "Nota opcional" })
                         ),
+
+                        // WARNING DE DEVALUACIÓN
+                        segment === 'ahorro' && currency === 'VES' && React.createElement('div', { className: "mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-3 items-center animate-fade-in" },
+                            React.createElement(AlertTriangle, { className: "text-red-500 shrink-0", size: 20 }),
+                            React.createElement('p', { className: "text-xs text-red-400 leading-tight" },
+                                React.createElement('strong', null, "Recuerda "),
+                                "Ahorrar en Bolívares puede provocar una pérdida de valor."
+                            )
+                        ),
                         
                         React.createElement('div', { className: "flex-1" }),
                         React.createElement('div', { className: "text-center py-1" }, React.createElement('span', { className: "text-gray-500 text-xs font-medium" }, "Equivalente: "), React.createElement('span', { className: "text-xl font-bold text-brand-light ml-2" }, `$${calculatedUSD.toFixed(2)}`)),
@@ -1119,9 +1130,10 @@
             );
         };
 
-        const HistoryView = ({ transactions, onEditTransaction }) => {
+        const HistoryView = ({ transactions, onEditTransaction, rates }) => {
              const [currentDate, setCurrentDate] = useState(new Date());
              const [searchQuery, setSearchQuery] = useState("");
+             
              const filteredTransactions = useMemo(() => {
                  return transactions.filter(t => {
                      if (!t.date) return false;
@@ -1158,25 +1170,52 @@
                 ),
                 filteredTransactions.length === 0 ? 
                     React.createElement('div', { className: "text-center py-12 text-gray-500 bg-dark-surface/30 rounded-3xl border border-white/5 border-dashed" }, "No hay movimientos este mes") :
-                    React.createElement('div', { className: "space-y-3" }, filteredTransactions.map(t => React.createElement('div', { key: t.id, onClick: () => onEditTransaction(t), className: "glass-panel-premium p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 active:scale-[0.98] transition-all" }, 
-                    React.createElement('div', { className: "flex gap-3 items-center" }, 
-                        React.createElement('div', { className: `w-10 h-10 rounded-full flex items-center justify-center border border-white/5 ${t.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}` }, 
-                             t.type === 'income' ? React.createElement(ArrowDownLeft, { size: 18 }) : React.createElement(ArrowUpRight, { size: 18 })
-                        ),
-                        React.createElement('div', { className: "flex flex-col" }, 
-                            React.createElement('span', { className: "font-bold text-white text-base leading-tight" }, t.category), 
-                            React.createElement('span', { className: "text-xs text-gray-400 font-medium mt-0.5" }, t.description || new Date(t.date).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }))
+                    React.createElement('div', { className: "space-y-3" }, filteredTransactions.map(t => {
+                        // Lógica de Devaluación para Ahorro en VES
+                        const isVesSaving = t.segment === 'ahorro' && t.currency === 'VES';
+                        let devaluation = 0;
+                        if (isVesSaving && rates.bcv && t.originalRate) {
+                            // Cálculo de devaluación: cuanto ha caído el valor
+                            // Valor original: 100 USD (ejemplo)
+                            // Valor actual: 100 * (tasa_vieja / tasa_nueva)
+                            // Perdida: 1 - (tasa_vieja / tasa_nueva)
+                            devaluation = ((t.originalRate / rates.bcv) - 1) * 100;
+                        }
+
+                        return React.createElement('div', { 
+                            key: t.id, 
+                            onClick: () => onEditTransaction(t), 
+                            className: `glass-panel-premium p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 active:scale-[0.98] transition-all relative overflow-hidden ${isVesSaving ? 'border-red-500/40 shadow-danger' : ''}` 
+                        }, 
+                        // Fondo de advertencia sutil para ahorros en Bs
+                        isVesSaving && React.createElement('div', { className: "absolute inset-0 bg-danger-gradient opacity-20 pointer-events-none" }),
+                        
+                        React.createElement('div', { className: "flex gap-3 items-center relative z-10" }, 
+                            React.createElement('div', { className: `w-10 h-10 rounded-full flex items-center justify-center border border-white/5 ${t.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}` }, 
+                                 t.type === 'income' ? React.createElement(ArrowDownLeft, { size: 18 }) : React.createElement(ArrowUpRight, { size: 18 })
+                            ),
+                            React.createElement('div', { className: "flex flex-col" }, 
+                                React.createElement('span', { className: "font-bold text-white text-base leading-tight" }, t.category), 
+                                React.createElement('div', { className: "flex items-center gap-2 mt-0.5" },
+                                    React.createElement('span', { className: "text-xs text-gray-400 font-medium" }, t.description || new Date(t.date).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })),
+                                    // Badge de Devaluación
+                                    isVesSaving && devaluation < -0.1 && React.createElement('span', { className: "bg-red-500/20 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-red-500/20 flex items-center gap-1" }, 
+                                        React.createElement(TrendingDown, { size: 10 }), 
+                                        `${devaluation.toFixed(0)}% Val.`
+                                    )
+                                )
+                            )
+                        ), 
+                        React.createElement('div', { className: "text-right relative z-10" }, 
+                            React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `${t.type === 'income' ? '+' : '-'}${(t.amountUSD || 0).toFixed(2)}`), 
+                            React.createElement('span', { className: "text-xs text-gray-500 font-mono font-bold bg-black/30 px-1.5 py-0.5 rounded ml-auto w-fit block mt-1" }, t.currency === 'USD' ? 'USD' : `Bs ${t.amount}`)
                         )
-                    ), 
-                    React.createElement('div', { className: "text-right" }, 
-                        React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `${t.type === 'income' ? '+' : '-'}${(t.amountUSD || 0).toFixed(2)}`), 
-                        React.createElement('span', { className: "text-xs text-gray-500 font-mono font-bold bg-black/30 px-1.5 py-0.5 rounded ml-auto w-fit block mt-1" }, t.currency === 'USD' ? 'USD' : `Bs ${t.amount}`)
-                    )
-                )))
+                    );
+                }))
             );
         };
         
-        const PnLReportView = ({ transactions, pnlStructure }) => {
+        const PnLReportView = ({ transactions, pnlStructure, rates }) => {
             const [granularity, setGranularity] = useState('monthly');
             const [startDate, setStartDate] = useState(() => { const d = new Date(); d.setDate(1); return getLocalDateString(d); });
             const [endDate, setEndDate] = useState(() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return getLocalDateString(d); });
@@ -1215,7 +1254,14 @@
                         if (period) pId = period.id; 
                     } 
                     if (pId && data[t.segment]) { 
-                        const amount = t.amountUSD || 0; 
+                        // MODIFICACIÓN DEVALUACIÓN EN REPORTE:
+                        // Si es AHORRO en VES, calculamos el valor USD usando la tasa ACTUAL (rates.bcv), no la histórica.
+                        let amount = t.amountUSD || 0; 
+                        
+                        if (t.segment === 'ahorro' && t.currency === 'VES' && rates.bcv > 0) {
+                            amount = t.amount / rates.bcv;
+                        }
+
                         if (!data[t.segment].concepts[t.category]) { data[t.segment].concepts[t.category] = {}; periods.forEach(p => data[t.segment].concepts[t.category][p.id] = 0); } 
                         if (data[t.segment].concepts[t.category][pId] !== undefined) data[t.segment].concepts[t.category][pId] += amount; 
                         data[t.segment].total[pId] += amount; 
@@ -1224,7 +1270,7 @@
                 }); 
                 periods.forEach(p => { if(!p.id) return; const totalIncome = data.ingresos.total[p.id] || 0; const totalSavings = data.ahorro.total[p.id] || 0; const totalFixed = data.gastos_fijos.total[p.id] || 0; data.available[p.id] = totalIncome - totalSavings; data.flexibleAvailable[p.id] = totalIncome - totalSavings - totalFixed; }); 
                 return data; 
-            }, [transactions, periods, granularity, startDate, endDate, pnlStructure]);
+            }, [transactions, periods, granularity, startDate, endDate, pnlStructure, rates]);
 
             if (isFullScreen) {
                 return React.createElement('div', { className: "fixed inset-0 z-50 bg-dark-base flex flex-col h-full w-full animate-fade-in" },
@@ -1359,8 +1405,8 @@
                 React.createElement('div', { className: "h-screen w-full bg-app-bg flex flex-col text-white" },
                     React.createElement('div', { className: "flex-1 overflow-y-auto no-scrollbar" },
                         currentTab === 'home' ? React.createElement(HomeView, { rates, transactions, onUpdateRate: updateRates, onOpenAdd: () => setShowTransactionModal(true), onEditTransaction: handleEditTransaction, user, onOpenProfile: () => setCurrentTab('profile') }) :
-                        currentTab === 'history' ? React.createElement(HistoryView, { transactions, onEditTransaction: handleEditTransaction }) :
-                        currentTab === 'report' ? React.createElement(PnLReportView, { transactions, pnlStructure }) : 
+                        currentTab === 'history' ? React.createElement(HistoryView, { transactions, onEditTransaction: handleEditTransaction, rates }) :
+                        currentTab === 'report' ? React.createElement(PnLReportView, { transactions, pnlStructure, rates }) : 
                         currentTab === 'budget' ? React.createElement(BudgetView, { pnlStructure, budgets, onUpdateBudgets: updateBudgets, transactions }) :
                         currentTab === 'config' ? React.createElement(ConfigView, { pnlData: pnlStructure, onUpdatePnl: updatePnl, userId: user.uid }) :
                         currentTab === 'profile' ? React.createElement(ProfileView, { user, onBack: () => setCurrentTab('home'), onLogout: () => signOut(auth) }) : null
