@@ -265,12 +265,8 @@
 
             return React.createElement('div', { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 animate-fade-in" },
                  React.createElement('div', { className: "bg-dark-card p-6 rounded-[2rem] border border-white/10 max-w-sm w-full animate-bounce-in shadow-glass" },
-                    React.createElement('div', { className: "flex items-center gap-3 mb-6" },
-                        React.createElement('div', { className: "p-3 bg-brand/20 text-brand rounded-full" }, React.createElement(Info, { size: 24 })),
-                        React.createElement('h3', { className: "text-xl font-bold text-white" }, "Guía Rápida")
-                    ),
-
-                    React.createElement('div', { className: "space-y-6 mb-6 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar" },
+                    
+                    React.createElement('div', { className: "space-y-5 mb-6 mt-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" },
                         // Paso 1: Personalización
                         React.createElement('div', { className: "flex gap-4 items-start" },
                             React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
@@ -293,7 +289,7 @@
                         ),
                         // Paso 3: Presupuestos
                         React.createElement('div', { className: "flex gap-4 items-start" },
-                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-brand/10 border border-brand/20 text-brand flex items-center justify-center shrink-0" }, 
+                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
                                 React.createElement(PieChart, { size: 20 })
                             ),
                             React.createElement('div', { className: "pt-1" },
@@ -301,14 +297,24 @@
                                 React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Define límites para tus Gastos Variables y mantén siempre positivo tu Disponible Flexible.")
                             )
                         ),
-                        // Paso 4: Historial y Reportes
+                        // Paso 4: Movimientos
                         React.createElement('div', { className: "flex gap-4 items-start" },
-                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0" }, 
+                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
+                                React.createElement(History, { size: 20 })
+                            ),
+                            React.createElement('div', { className: "pt-1" },
+                                React.createElement('strong', { className: "block text-white text-sm mb-1" }, "4. Movimientos"),
+                                React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Consulta, busca y gestiona tu lista completa de movimientos pasados.")
+                            )
+                        ),
+                        // Paso 5: Reportes
+                        React.createElement('div', { className: "flex gap-4 items-start" },
+                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
                                 React.createElement(FileSpreadsheet, { size: 20 })
                             ),
                             React.createElement('div', { className: "pt-1" },
-                                React.createElement('strong', { className: "block text-white text-sm mb-1" }, "4. Historial y Reportes"),
-                                React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Analiza tus finanzas con el historial de transacciones y los gráficos de reporte detallados.")
+                                React.createElement('strong', { className: "block text-white text-sm mb-1" }, "5. Reportes"),
+                                React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Analiza tus finanzas con tablas detalladas y proyecciones de tu rendimiento.")
                             )
                         )
                     ),
