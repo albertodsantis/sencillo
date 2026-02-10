@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v5.3 Premium</title>
+    <title>Sencillo v5.4 Premium</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -302,29 +302,22 @@
         };
 
         const ConfigView = ({ pnlData, onUpdatePnl, userId }) => {
-            const [localPnl, setLocalPnl] = useState(pnlData);
             const [newConcept, setNewConcept] = useState("");
             const [activeSegment, setActiveSegment] = useState("ingresos"); 
-            const [isSaved, setIsSaved] = useState(false);
-
-            useEffect(() => setLocalPnl(pnlData), [pnlData]);
+            // isSaved removido, ya que ahora es automático
 
             const handleAdd = () => {
                 if (!newConcept.trim()) return;
-                const updatedList = [...(localPnl[activeSegment] || []), newConcept.trim()];
-                setLocalPnl({ ...localPnl, [activeSegment]: updatedList });
+                const updatedList = [...(pnlData[activeSegment] || []), newConcept.trim()];
+                const newData = { ...pnlData, [activeSegment]: updatedList };
+                onUpdatePnl(newData); // Guardado automático
                 setNewConcept("");
             };
 
             const handleDelete = (segment, index) => {
-                const updatedList = localPnl[segment].filter((_, i) => i !== index);
-                setLocalPnl({ ...localPnl, [segment]: updatedList });
-            };
-
-            const handleSave = () => {
-                onUpdatePnl(localPnl);
-                setIsSaved(true);
-                setTimeout(() => setIsSaved(false), 2000);
+                const updatedList = pnlData[segment].filter((_, i) => i !== index);
+                const newData = { ...pnlData, [segment]: updatedList };
+                onUpdatePnl(newData); // Guardado automático
             };
 
             return React.createElement('div', { className: "h-full flex flex-col pt-[env(safe-area-inset-top)] bg-app-bg" },
@@ -351,16 +344,14 @@
                         )
                     ),
                     React.createElement('div', { className: "space-y-3" },
-                        (localPnl[activeSegment] || []).map((concept, idx) => 
+                        (pnlData[activeSegment] || []).map((concept, idx) => 
                             React.createElement('div', { key: idx, className: "flex justify-between items-center p-4 bg-dark-card rounded-2xl border border-gray-800" },
                                 React.createElement('span', { className: "font-medium text-gray-200" }, concept),
                                 React.createElement('button', { onClick: () => handleDelete(activeSegment, idx), className: "text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-colors" }, React.createElement(Trash2, { size: 18 }))
                             )
                         )
-                    ),
-                    React.createElement('div', { className: "mt-10 mb-10" },
-                         React.createElement(Button, { onClick: handleSave }, isSaved ? "¡Guardado!" : "Guardar Cambios")
                     )
+                    // Botón de guardar eliminado
                 )
             );
         };
@@ -795,7 +786,8 @@
                     React.createElement('div', { className: "relative z-10 flex flex-col items-center text-center" },
                         
                         // FILA SUPERIOR: FLECHA - MES - FLECHA
-                        React.createElement('div', { className: "w-full flex justify-between items-center mb-2" },
+                        // AQUI ESTÁ EL CAMBIO DE LAS FLECHAS
+                        React.createElement('div', { className: "w-full flex justify-between items-center mb-2 -mx-6 px-2" }, 
                             // Botón Anterior
                             React.createElement('button', { onClick: prevMonth, className: "p-2 text-white/70 hover:text-white transition-colors active:scale-90" }, 
                                 React.createElement(ChevronLeft, { size: 32, strokeWidth: 3 })
