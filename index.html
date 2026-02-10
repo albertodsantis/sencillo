@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v5.4.3 Premium</title>
+    <title>Sencillo v5.5 Premium</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -153,13 +153,13 @@
             Wallet, TrendingUp, TrendingDown, Plus, Settings, 
             Calendar, DollarSign, RefreshCw, X, Save, ArrowRightLeft,
             LogOut, ChevronDown, Filter, Home, History, PieChart, Trash2, List, FileSpreadsheet,
-            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal, Receipt, CreditCard, Info, Maximize2, Minimize2, ZoomIn, ZoomOut
+            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal, Receipt, CreditCard, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, MapPin, Phone
         } from 'lucide-react';
 
         // --- FIREBASE SETUP ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, signInAnonymously, onAuthStateChanged, signInWithCustomToken, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, initializeFirestore, memoryLocalCache, collection, doc, setDoc, onSnapshot, query, orderBy, limit, addDoc, deleteDoc, updateDoc, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, signInAnonymously, onAuthStateChanged, signInWithCustomToken, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, initializeFirestore, memoryLocalCache, collection, doc, setDoc, getDoc, onSnapshot, query, orderBy, limit, addDoc, deleteDoc, updateDoc, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const ROOT_COLLECTION = 'projects';
         const PROJECT_DOC_ID = 'sencillo-app-40a36';
@@ -240,6 +240,7 @@
                 primary: "btn-press bg-card-gradient text-white shadow-neon font-bold border border-white/10", 
                 secondary: "btn-press bg-dark-highlight text-white border border-white/10 hover:bg-white/10",
                 ghost: "text-gray-400 hover:text-white",
+                destructive: "btn-press bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20"
             };
             return React.createElement('button', { onClick, type, disabled, className: `px-6 py-4 rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 w-full ${variants[variant]} ${className} ${disabled ? 'opacity-50' : ''}` }, children);
         };
@@ -296,6 +297,206 @@
                         React.createElement('div', { className: "mt-6 text-center" },
                             React.createElement('button', { type: "button", onClick: () => { setIsSignUp(!isSignUp); setErrorMsg(null); }, className: "text-sm text-gray-400 hover:text-brand transition-colors p-2" }, isSignUp ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Regístrate")
                         )
+                    )
+                )
+            );
+        };
+
+        // --- PROFILE VIEW ---
+        const ProfileView = ({ user, onBack, onLogout }) => {
+            const [profileData, setProfileData] = useState({
+                firstName: user.displayName ? user.displayName.split(' ')[0] : '',
+                surname: user.displayName && user.displayName.split(' ').length > 1 ? user.displayName.split(' ').slice(1).join(' ') : '',
+                phone: '',
+                address: '',
+                idNumber: '',
+                email: user.email || '',
+                receivePromotions: true
+            });
+            const [isSaving, setIsSaving] = useState(false);
+            const [msg, setMsg] = useState(null);
+
+            // Fetch extra profile data from Firestore
+            useEffect(() => {
+                const fetchProfile = async () => {
+                    try {
+                        const docRef = doc(db, ROOT_COLLECTION, PROJECT_DOC_ID, 'users', user.uid, 'settings', 'profile');
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            setProfileData(prev => ({ ...prev, ...docSnap.data() }));
+                        }
+                    } catch (err) { console.error("Error fetching profile", err); }
+                };
+                fetchProfile();
+            }, [user]);
+
+            const handleSave = async () => {
+                setIsSaving(true);
+                setMsg(null);
+                try {
+                    // Update Auth Display Name
+                    const fullName = `${profileData.firstName} ${profileData.surname}`.trim();
+                    if (auth.currentUser.displayName !== fullName) {
+                        await updateProfile(auth.currentUser, { displayName: fullName });
+                    }
+
+                    // Save extended data to Firestore
+                    const docRef = doc(db, ROOT_COLLECTION, PROJECT_DOC_ID, 'users', user.uid, 'settings', 'profile');
+                    await setDoc(docRef, profileData, { merge: true });
+                    
+                    setMsg({ type: 'success', text: 'Perfil actualizado' });
+                    setTimeout(() => setMsg(null), 3000);
+                } catch (err) {
+                    setMsg({ type: 'error', text: 'Error al guardar: ' + err.message });
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            const handleDeleteAccount = async () => {
+                if (confirm("¿Estás seguro de eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos.")) {
+                    try {
+                        await deleteUser(auth.currentUser);
+                    } catch (e) { alert("Error: " + e.message); }
+                }
+            };
+
+            const handlePasswordReset = async () => {
+                if (!user.email) return;
+                try {
+                    await sendPasswordResetEmail(auth, user.email);
+                    alert(`Correo de restablecimiento enviado a ${user.email}`);
+                } catch (e) { alert("Error: " + e.message); }
+            };
+
+            const handleChange = (field, value) => {
+                setProfileData(prev => ({ ...prev, [field]: value }));
+            };
+
+            return React.createElement('div', { className: "h-full flex flex-col pt-[env(safe-area-inset-top)] bg-app-bg animate-slide-up" },
+                // Header
+                React.createElement('div', { className: "flex justify-between items-center px-6 py-4" },
+                    React.createElement('button', { onClick: onBack, className: "p-2 -ml-2 text-gray-400 hover:text-white" }, React.createElement(ChevronLeft, { size: 28 })),
+                    React.createElement('h2', { className: "text-lg font-bold text-white" }, "Mi Perfil"),
+                    React.createElement('button', { onClick: handleSave, disabled: isSaving, className: "text-brand font-bold text-sm" }, isSaving ? React.createElement(Loader2, { className: "animate-spin" }) : "Guardar")
+                ),
+
+                React.createElement('div', { className: "flex-1 overflow-y-auto px-6 pb-12 space-y-6" },
+                    
+                    msg && React.createElement('div', { className: `p-3 rounded-xl text-sm font-bold text-center ${msg.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}` }, msg.text),
+
+                    // Foto de perfil simulada
+                    React.createElement('div', { className: "flex justify-center mb-6" },
+                        React.createElement('div', { className: "w-24 h-24 rounded-full bg-card-gradient shadow-neon flex items-center justify-center text-3xl font-bold text-white border-4 border-app-bg" }, 
+                            profileData.firstName ? profileData.firstName.charAt(0).toUpperCase() : React.createElement(User, { size: 40 })
+                        )
+                    ),
+
+                    // Campos del formulario
+                    React.createElement('div', { className: "glass-panel-premium p-6 rounded-[2rem] space-y-5" },
+                        React.createElement('div', { className: "space-y-1" },
+                             React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 tracking-wider" }, "Nombre"),
+                             React.createElement('div', { className: "bg-dark-surface/50 border border-white/5 rounded-2xl flex items-center px-4" },
+                                React.createElement(User, { size: 16, className: "text-gray-500 mr-3" }),
+                                React.createElement('input', { 
+                                    value: profileData.firstName, 
+                                    onChange: (e) => handleChange('firstName', e.target.value), 
+                                    className: "w-full py-4 bg-transparent text-white font-medium focus:outline-none placeholder-gray-600", 
+                                    placeholder: "Tu nombre" 
+                                })
+                             )
+                        ),
+                        React.createElement('div', { className: "space-y-1" },
+                             React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 tracking-wider" }, "Apellido"),
+                             React.createElement('div', { className: "bg-dark-surface/50 border border-white/5 rounded-2xl flex items-center px-4" },
+                                React.createElement('div', { className: "w-4 mr-3" }), // Spacer alignment
+                                React.createElement('input', { 
+                                    value: profileData.surname, 
+                                    onChange: (e) => handleChange('surname', e.target.value), 
+                                    className: "w-full py-4 bg-transparent text-white font-medium focus:outline-none placeholder-gray-600", 
+                                    placeholder: "Tu apellido" 
+                                })
+                             )
+                        ),
+                        
+                        React.createElement('div', { className: "grid grid-cols-3 gap-3" },
+                            React.createElement('div', { className: "col-span-1 space-y-1" },
+                                React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 tracking-wider" }, "Prefijo"),
+                                React.createElement('div', { className: "bg-dark-surface/50 border border-white/5 rounded-2xl flex items-center px-3 py-4 justify-center gap-2" },
+                                    React.createElement('span', { className: "text-lg" }, "🇻🇪"),
+                                    React.createElement('span', { className: "text-white font-bold" }, "+58")
+                                )
+                            ),
+                            React.createElement('div', { className: "col-span-2 space-y-1" },
+                                React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 tracking-wider" }, "Móvil"),
+                                React.createElement('div', { className: "bg-dark-surface/50 border border-white/5 rounded-2xl flex items-center px-4" },
+                                    React.createElement(Phone, { size: 16, className: "text-gray-500 mr-3" }),
+                                    React.createElement('input', { 
+                                        type: "tel",
+                                        value: profileData.phone, 
+                                        onChange: (e) => handleChange('phone', e.target.value), 
+                                        className: "w-full py-4 bg-transparent text-white font-medium focus:outline-none placeholder-gray-600", 
+                                        placeholder: "414 1234567" 
+                                    })
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', { className: "space-y-1" },
+                             React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 tracking-wider" }, "Dirección"),
+                             React.createElement('div', { className: "bg-dark-surface/50 border border-white/5 rounded-2xl flex items-center px-4" },
+                                React.createElement(MapPin, { size: 16, className: "text-gray-500 mr-3" }),
+                                React.createElement('input', { 
+                                    value: profileData.address, 
+                                    onChange: (e) => handleChange('address', e.target.value), 
+                                    className: "w-full py-4 bg-transparent text-white font-medium focus:outline-none placeholder-gray-600", 
+                                    placeholder: "Caracas, Venezuela" 
+                                })
+                             )
+                        ),
+
+                        React.createElement('div', { className: "space-y-1" },
+                             React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 tracking-wider" }, "Cédula / ID"),
+                             React.createElement('div', { className: "bg-dark-surface/50 border border-white/5 rounded-2xl flex items-center px-4" },
+                                React.createElement(CreditCard, { size: 16, className: "text-gray-500 mr-3" }),
+                                React.createElement('input', { 
+                                    value: profileData.idNumber, 
+                                    onChange: (e) => handleChange('idNumber', e.target.value), 
+                                    className: "w-full py-4 bg-transparent text-white font-medium focus:outline-none placeholder-gray-600", 
+                                    placeholder: "V-12345678" 
+                                })
+                             )
+                        ),
+
+                        React.createElement('div', { className: "space-y-1" },
+                             React.createElement('label', { className: "text-[10px] font-bold text-gray-500 uppercase ml-2 tracking-wider" }, "Email"),
+                             React.createElement('div', { className: "bg-dark-surface/50 border border-white/5 rounded-2xl flex items-center px-4 opacity-70" },
+                                React.createElement(Mail, { size: 16, className: "text-gray-500 mr-3" }),
+                                React.createElement('input', { 
+                                    value: profileData.email, 
+                                    readOnly: true,
+                                    className: "w-full py-4 bg-transparent text-gray-400 font-medium focus:outline-none cursor-not-allowed", 
+                                })
+                             )
+                        ),
+                    ),
+
+                    // Opciones Toggle
+                    React.createElement('div', { className: "flex items-center justify-between px-4 py-2" },
+                        React.createElement('span', { className: "text-white font-medium" }, "Recibir novedades"),
+                        React.createElement('button', { 
+                            onClick: () => handleChange('receivePromotions', !profileData.receivePromotions),
+                            className: `w-14 h-8 rounded-full transition-colors relative ${profileData.receivePromotions ? 'bg-brand shadow-neon' : 'bg-dark-highlight'}` 
+                        },
+                            React.createElement('div', { className: `absolute top-1 w-6 h-6 bg-white rounded-full transition-transform shadow-md ${profileData.receivePromotions ? 'left-7' : 'left-1'}` })
+                        )
+                    ),
+
+                    // Acciones
+                    React.createElement('div', { className: "space-y-3 pt-4" },
+                        React.createElement(Button, { variant: "ghost", onClick: handlePasswordReset, className: "text-brand hover:text-brand-light" }, "Cambiar Contraseña"),
+                        React.createElement(Button, { variant: "destructive", onClick: onLogout }, "Cerrar Sesión"),
+                        React.createElement('button', { onClick: handleDeleteAccount, className: "w-full py-4 text-xs font-bold text-red-700 hover:text-red-500 transition-colors uppercase tracking-widest" }, "Eliminar mi cuenta")
                     )
                 )
             );
@@ -737,7 +938,7 @@
             );
         };
 
-        const HomeView = ({ rates, transactions, onUpdateRate, onOpenAdd, user, onLogout }) => {
+        const HomeView = ({ rates, transactions, onUpdateRate, onOpenAdd, user, onOpenProfile }) => {
             const [showRatesModal, setShowRatesModal] = useState(false);
             const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -774,8 +975,8 @@
 
             return React.createElement('div', { className: "px-6 pb-32 space-y-6 animate-fade-in pt-12" },
                 React.createElement('header', { className: "flex justify-between items-center mb-0 mt-4" }, 
-                    React.createElement('h1', { className: "text-3xl font-black text-white tracking-tight" }, user?.displayName || (user.email ? user.email.split('@')[0] : 'Usuario')),
-                    React.createElement('button', { onClick: onLogout, className: "w-10 h-10 rounded-full bg-dark-card border border-white/5 flex items-center justify-center text-gray-400 hover:text-white transition-colors" }, React.createElement(LogOut, { size: 18 }))
+                    React.createElement('h1', { className: "text-3xl font-black text-white tracking-tight" }, user?.displayName ? `Hola, ${user.displayName.split(' ')[0]}` : (user.email ? user.email.split('@')[0] : 'Usuario')),
+                    React.createElement('button', { onClick: onOpenProfile, className: "w-12 h-12 rounded-full bg-dark-card border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors shadow-lg" }, React.createElement(User, { size: 24 }))
                 ),
                 
                 // --- TARJETA PRINCIPAL CON NAVEGACIÓN INTEGRADA ---
@@ -1177,13 +1378,15 @@
             return React.createElement(ErrorBoundary, null, 
                 React.createElement('div', { className: "h-screen w-full bg-app-bg flex flex-col text-white" },
                     React.createElement('div', { className: "flex-1 overflow-y-auto no-scrollbar" },
-                        currentTab === 'home' ? React.createElement(HomeView, { rates, transactions, onUpdateRate: updateRates, onOpenAdd: () => setShowTransactionModal(true), onEditTransaction: handleEditTransaction, user, onLogout: () => signOut(auth) }) :
+                        currentTab === 'home' ? React.createElement(HomeView, { rates, transactions, onUpdateRate: updateRates, onOpenAdd: () => setShowTransactionModal(true), onEditTransaction: handleEditTransaction, user, onOpenProfile: () => setCurrentTab('profile') }) :
                         currentTab === 'history' ? React.createElement(HistoryView, { transactions, onEditTransaction: handleEditTransaction }) :
                         currentTab === 'report' ? React.createElement(PnLReportView, { transactions, pnlStructure }) : 
                         currentTab === 'budget' ? React.createElement(BudgetView, { pnlStructure, budgets, onUpdateBudgets: updateBudgets, transactions }) :
-                        currentTab === 'config' ? React.createElement(ConfigView, { pnlData: pnlStructure, onUpdatePnl: updatePnl, userId: user.uid }) : null
+                        currentTab === 'config' ? React.createElement(ConfigView, { pnlData: pnlStructure, onUpdatePnl: updatePnl, userId: user.uid }) :
+                        currentTab === 'profile' ? React.createElement(ProfileView, { user, onBack: () => setCurrentTab('home'), onLogout: () => signOut(auth) }) : null
                     ),
-                    React.createElement('nav', { className: "glass-panel-premium border-t-0 rounded-t-[2rem] pb-safe pt-4 px-2 flex justify-around items-center z-30 safe-bottom fixed bottom-0 w-full shadow-2xl" },
+                    // Ocultar NavigationBar si estamos en el perfil
+                    currentTab !== 'profile' && React.createElement('nav', { className: "glass-panel-premium border-t-0 rounded-t-[2rem] pb-safe pt-4 px-2 flex justify-around items-center z-30 safe-bottom fixed bottom-0 w-full shadow-2xl" },
                         ['home', 'budget', 'history', 'report', 'config'].map(tab => 
                             React.createElement('button', { key: tab, onClick: () => setCurrentTab(tab), className: `p-4 rounded-2xl transition-all btn-press ${currentTab === tab ? 'text-brand bg-white/5' : 'text-gray-500 hover:text-gray-300'}` }, 
                                 React.createElement(tab === 'home' ? Home : tab === 'budget' ? PieChart : tab === 'history' ? History : tab === 'report' ? FileSpreadsheet : Settings, { size: 28, strokeWidth: currentTab === tab ? 2.5 : 2 })
