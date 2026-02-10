@@ -94,8 +94,8 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* Ajuste de seguridad para el notch inferior de los móviles */
-        .safe-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 7px); }
+        /* Ajuste de seguridad optimizado para el notch inferior */
+        .safe-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 4px); }
         
         /* === ESTILOS PREMIUM === */
         .glass-panel-premium {
@@ -1186,7 +1186,7 @@
                                 React.createElement('input', { type: "date", value: startDate, onChange: e => setStartDate(e.target.value), className: "w-full bg-dark-base border border-white/10 text-white rounded-xl px-2 py-3 text-xs font-bold outline-none text-center appearance-none" })
                             ),
                              React.createElement('div', { className: "min-w-0" },
-                                React.createElement('label', { className: "text-[10px] text-gray-400 font-bold uppercase ml-2 mb-1 block" }, "Hasta"),
+                                React.createElement('label', { className: "text-[10px] font-bold uppercase ml-2 mb-1 block" }, "Hasta"),
                                 React.createElement('input', { type: "date", value: endDate, onChange: e => setEndDate(e.target.value), className: "w-full bg-dark-base border border-white/10 text-white rounded-xl px-2 py-3 text-xs font-bold outline-none text-center appearance-none" })
                             )
                         )
@@ -1263,7 +1263,7 @@
                         currentTab === 'config' ? React.createElement(ConfigView, { pnlData: pnlStructure, onUpdatePnl: updatePnl, userId: user.uid }) :
                         currentTab === 'profile' ? React.createElement(ProfileView, { user, onBack: () => setCurrentTab('home'), onLogout: () => signOut(auth) }) : null
                     ),
-                    currentTab !== 'profile' && React.createElement('nav', { className: "glass-panel-premium border-t-0 rounded-t-[2rem] safe-bottom pt-4 px-2 flex justify-around items-center fixed bottom-0 w-full shadow-2xl z-30" },
+                    currentTab !== 'profile' && React.createElement('nav', { className: "glass-panel-premium border-t-0 rounded-t-[2rem] safe-bottom pt-3 px-2 flex justify-around items-center fixed bottom-0 w-full shadow-2xl z-30" },
                         ['home', 'budget', 'history', 'report', 'config'].map(tab => 
                             React.createElement('button', { key: tab, onClick: () => setCurrentTab(tab), className: `p-4 rounded-2xl transition-all btn-press ${currentTab === tab ? 'text-brand bg-white/5' : 'text-gray-500'}` }, 
                                 React.createElement(tab === 'home' ? Home : tab === 'budget' ? PieChart : tab === 'history' ? History : tab === 'report' ? FileSpreadsheet : Settings, { size: 28, strokeWidth: currentTab === tab ? 2.5 : 2 })
@@ -1280,5 +1280,3 @@
     </script>
 </body>
 </html>
-
-
