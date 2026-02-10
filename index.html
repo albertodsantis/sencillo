@@ -784,26 +784,20 @@
                     React.createElement('div', { className: "absolute -right-16 -top-16 w-64 h-64 bg-white/20 rounded-full blur-3xl" }),
                     React.createElement('div', { className: "absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black/20 to-transparent" }),
                     
+                    // --- FLECHAS DE NAVEGACIÓN ABSOLUTAS ---
+                    React.createElement('button', { onClick: prevMonth, className: "absolute left-4 top-8 z-20 p-2 text-white/70 hover:text-white transition-colors active:scale-90" }, 
+                        React.createElement(ChevronLeft, { size: 32, strokeWidth: 3 })
+                    ),
+                    React.createElement('button', { onClick: nextMonth, className: "absolute right-4 top-8 z-20 p-2 text-white/70 hover:text-white transition-colors active:scale-90" }, 
+                        React.createElement(ChevronRight, { size: 32, strokeWidth: 3 })
+                    ),
+
                     React.createElement('div', { className: "relative z-10 flex flex-col items-center text-center" },
                         
-                        // FILA SUPERIOR: FLECHA - MES - FLECHA
-                        // FIX: Increased negative margin (-mx-8) and padding (px-6) to push arrows to the edges
-                        React.createElement('div', { className: "w-full flex justify-between items-center mb-2 -mx-8 px-6" }, 
-                            // Botón Anterior
-                            React.createElement('button', { onClick: prevMonth, className: "p-2 text-white/70 hover:text-white transition-colors active:scale-90" }, 
-                                React.createElement(ChevronLeft, { size: 32, strokeWidth: 3 })
-                            ),
-                            
-                            // Etiqueta Central
-                            React.createElement('div', { className: "flex flex-col items-center justify-center" },
-                                 React.createElement('span', { className: "text-[10px] text-emerald-100/70 font-bold uppercase tracking-widest" }, "BALANCE"),
-                                 React.createElement('span', { className: "text-lg font-black text-white uppercase tracking-tight leading-none" }, monthLabel)
-                            ),
-
-                            // Botón Siguiente
-                            React.createElement('button', { onClick: nextMonth, className: "p-2 text-white/70 hover:text-white transition-colors active:scale-90" }, 
-                                React.createElement(ChevronRight, { size: 32, strokeWidth: 3 })
-                            )
+                        // Etiqueta Central (sin flechas en flex row)
+                        React.createElement('div', { className: "flex flex-col items-center justify-center mb-2" },
+                             React.createElement('span', { className: "text-[10px] text-emerald-100/70 font-bold uppercase tracking-widest" }, "BALANCE"),
+                             React.createElement('span', { className: "text-lg font-black text-white uppercase tracking-tight leading-none" }, monthLabel)
                         ),
 
                         // Balance
@@ -1099,7 +1093,7 @@
                             // INGRESOS Y AHORRO
                             ['ingresos', 'ahorro'].map(seg => React.createElement(React.Fragment, { key: seg }, 
                                 React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-group-header" }, SEGMENTS[seg].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-group-header" }))), 
-                                Object.entries(reportData[seg].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
+                                Object.entries(reportData[seg].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
                                 React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-white" }, `Total ${SEGMENTS[seg].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-total" }, Math.round(reportData[seg].total[p.id]).toLocaleString()))))
                             ),
                             
