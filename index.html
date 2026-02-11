@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v1.2</title>
+    <title>Sencillo v1.3</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -96,7 +96,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
-        .safe-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 4px); }
+        .safe-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 10px); }
         
         /* === ESTILOS PREMIUM === */
         .glass-panel-premium {
@@ -143,6 +143,11 @@
             flex-direction: column;
             gap: 10px;
             z-index: 60;
+        }
+        
+        /* Floating Action Button specific adjustment */
+        .fab-shadow {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
         }
     </style>
 </head>
@@ -222,7 +227,6 @@
             { id: 'biannual', label: 'Semestral (c/6 meses)' }
         ];
 
-// ACTUALIZADO: Fetch de Euro
         const getRatesFromAPI = async () => {
             try {
                 const [cotizacionesRes, parallelRes] = await Promise.all([
@@ -234,7 +238,6 @@
                 
                 if (cotizacionesRes && cotizacionesRes.ok) { 
                     const data = await cotizacionesRes.json();
-                    // El endpoint devuelve un array, buscamos por moneda
                     const usd = data.find(item => item.moneda === 'USD');
                     const eur = data.find(item => item.moneda === 'EUR');
 
@@ -314,17 +317,7 @@
                                 React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Define límites para tus Gastos Variables y mantén siempre positivo tu Disponible Flexible.")
                             )
                         ),
-                        // Paso 4: Movimientos
-                        React.createElement('div', { className: "flex gap-4 items-start" },
-                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
-                                React.createElement(History, { size: 20 })
-                            ),
-                            React.createElement('div', { className: "pt-1" },
-                                React.createElement('strong', { className: "block text-white text-sm mb-1" }, "4. Movimientos"),
-                                React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Consulta, busca y gestiona tu lista completa de movimientos pasados.")
-                            )
-                        ),
-                        // Paso 5: Reportes
+                        // Paso 4: Reportes
                         React.createElement('div', { className: "flex gap-4 items-start" },
                             React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
                                 React.createElement(FileSpreadsheet, { size: 20 })
@@ -828,7 +821,6 @@
             const handleSave = () => { onUpdateRate(tempRates); onClose(); };
             const today = new Date().toLocaleDateString('es-VE', { day: 'numeric', month: 'numeric' });
             
-            // ACTUALIZADO: Cálculo de Brecha con USDC (ex paralelo)
             const gap = useMemo(() => { if (!tempRates.bcv || !tempRates.parallel) return 0; return ((tempRates.parallel - tempRates.bcv) / tempRates.bcv) * 100; }, [tempRates]);
 
             const fetchLiveRates = async () => {
@@ -841,7 +833,6 @@
             };
 
             return React.createElement('div', { className: "fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center animate-fade-in" },
-                // ACTUALIZADO: Look and feel como la ficha (Gradiente)
                 React.createElement('div', { className: "w-full max-w-sm p-6 rounded-[2rem] mx-4 animate-slide-up border border-white/20 bg-card-gradient shadow-neon" },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" }, 
                         React.createElement('div', { className: "flex items-baseline gap-2" },
@@ -880,7 +871,6 @@
             const isEditing = !!initialData;
             const [segment, setSegment] = useState(initialData?.segment || 'gastos_variables'); 
             const [amount, setAmount] = useState(initialData ? initialData.amount.toString() : '');
-            // ACTUALIZADO: Estado por defecto de moneda ahora soporta 'EUR'
             const [currency, setCurrency] = useState(initialData?.currency || 'VES');
             const [category, setCategory] = useState(initialData?.category || '');
             const [description, setDescription] = useState(initialData?.description || '');
@@ -898,25 +888,17 @@
                 if ((!category || !concepts.includes(category)) && concepts.length > 0 && !isEditing) setCategory(concepts[0]);
             }, [segment, pnlStructure]);
 
-            // ACTUALIZADO: Cálculo de USD para el dashboard
             const calculatedUSD = useMemo(() => {
                 if (!amount) return 0;
                 if (currency === 'USD') return parseFloat(amount);
                 
-                // Si es EURO, convertimos Euro a USD usando la tasa implicita EUR/USD = (TasaEUR_Bs / TasaUSD_Bs)
                 if (currency === 'EUR') {
-                    // Tasa del euro seleccionada (manual o auto)
                     const eurRateInBs = rateType === 'manual' ? customRate : (rates.eur || 0);
-                    // Usamos BCV como referencia base del dólar para la conversión interna
                     const usdRateInBs = rates.bcv || 1; 
-                    
                     if (eurRateInBs === 0 || usdRateInBs === 0) return 0;
-                    // Valor en Bs = Amount EUR * Tasa EUR
-                    // Valor en USD = Valor en Bs / Tasa USD
                     return (parseFloat(amount) * eurRateInBs) / usdRateInBs;
                 }
 
-                // Caso VES
                 let rate = rateType === 'bcv' ? rates.bcv : (rateType === 'parallel' ? rates.parallel : customRate);
                 if (!rate || rate === 0) return 0;
                 return parseFloat(amount) / rate;
@@ -925,7 +907,6 @@
             const handleSubmit = async (e) => {
                 e.preventDefault(); if (!amount || !category) return; setIsSaving(true); 
                 
-                // ACTUALIZADO: Lógica de tasa final
                 let finalRate = 1;
                 if (currency === 'USD') finalRate = 1;
                 else if (currency === 'VES') finalRate = rateType === 'bcv' ? rates.bcv : (rateType === 'parallel' ? rates.parallel : customRate);
@@ -1015,7 +996,6 @@
                                     currency === 'USD' ? 'Dólares (USD)' : (currency === 'EUR' ? 'Euros (EUR)' : 'Bolívares (VES)')
                                 )
                             ),
-                            // ACTUALIZADO: Selector de moneda con EUR
                             React.createElement('div', { className: "flex bg-dark-surface/80 rounded-full p-1 mt-2 border border-white/5" },
                                 React.createElement('button', { type: "button", onClick: () => setCurrency('VES'), className: `px-5 py-2 rounded-full text-xs font-bold transition-all ${currency === 'VES' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}` }, "Bs"),
                                 React.createElement('button', { type: "button", onClick: () => setCurrency('USD'), className: `px-5 py-2 rounded-full text-xs font-bold transition-all ${currency === 'USD' ? 'bg-emerald-500 text-white shadow-neon' : 'text-gray-500 hover:text-white'}` }, "USD"),
@@ -1048,7 +1028,6 @@
                             )
                         ),
                         
-                        // Opciones de Tasa para VES
                         currency === 'VES' && React.createElement('div', { className: "bg-dark-surface/30 p-4 rounded-2xl border border-white/5" },
                             React.createElement('div', { className: "grid grid-cols-3 gap-2" },
                                 React.createElement('button', { type: "button", onClick: () => setRateType('bcv'), className: `p-2 rounded-xl text-[10px] font-bold border transition-all ${rateType === 'bcv' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-transparent text-gray-500 border-gray-700'}` }, "BCV", React.createElement('br'), rates.bcv),
@@ -1058,7 +1037,6 @@
                             rateType === 'manual' && React.createElement('input', { type: "number", value: customRate, onChange: e => setCustomRate(e.target.value), className: "w-full mt-3 p-3 rounded-xl bg-dark-base border border-gray-700 text-center font-bold text-brand-light focus:outline-none", placeholder: "Tasa personalizada" })
                         ),
 
-                        // ACTUALIZADO: Opciones de Tasa para EUR
                         currency === 'EUR' && React.createElement('div', { className: "bg-dark-surface/30 p-4 rounded-2xl border border-white/5" },
                             React.createElement('div', { className: "grid grid-cols-2 gap-2" },
                                 React.createElement('button', { type: "button", onClick: () => { setRateType('eur'); setCustomRate(rates.eur); }, className: `p-2 rounded-xl text-[10px] font-bold border transition-all ${rateType !== 'manual' ? 'bg-blue-600/20 text-blue-400 border-blue-600/30' : 'bg-transparent text-gray-500 border-gray-700'}` }, "TASA EURO", React.createElement('br'), rates.eur || 0),
@@ -1071,7 +1049,6 @@
                             React.createElement('input', { type: "text", value: description, onChange: e => setDescription(e.target.value), className: "w-full p-3 bg-dark-surface/50 text-white rounded-2xl focus:outline-none border border-white/5 font-medium text-sm", placeholder: "Nota opcional" })
                         ),
 
-                        // WARNING DE DEVALUACIÓN
                         segment === 'ahorro' && currency === 'VES' && React.createElement('div', { className: "mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-3 items-center animate-fade-in" },
                             React.createElement(AlertTriangle, { className: "text-red-500 shrink-0", size: 20 }),
                             React.createElement('p', { className: "text-xs text-red-400 leading-tight" },
@@ -1091,7 +1068,7 @@
             );
         };
 
-        const HomeView = ({ rates, transactions, onUpdateRate, onOpenAdd, user, onOpenProfile }) => {
+        const HomeView = ({ rates, transactions, onUpdateRate, user, onOpenProfile, onOpenReport }) => {
             const [showRatesModal, setShowRatesModal] = useState(false);
             const [showHelpModal, setShowHelpModal] = useState(false);
             const [currentDate, setCurrentDate] = useState(new Date());
@@ -1158,7 +1135,6 @@
                         ),
                         React.createElement('h2', { className: "text-5xl font-black text-white tracking-tighter mb-1 drop-shadow-lg" }, `$${dashboardData.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`),
                         
-                        // ACTUALIZADO: Botón de Tasas con EUR
                         React.createElement('div', { onClick: () => setShowRatesModal(true), className: "flex flex-wrap justify-center items-center gap-2 mt-5 px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md cursor-pointer border border-white/10 active:scale-95 transition-all max-w-full" },
                             React.createElement('span', { className: "text-[10px] font-semibold text-white whitespace-nowrap" }, `BCV: ${rates.bcv}`),
                             React.createElement('div', { className: "w-0.5 h-3 bg-white/50 rounded-full" }),
@@ -1170,11 +1146,8 @@
                     )
                 ),
                 
-                React.createElement('div', { className: "w-full" },
-                    React.createElement('button', { onClick: onOpenAdd, className: "w-full btn-press bg-white text-black h-14 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg" }, React.createElement(Plus, { size: 20 }), "Nuevo Movimiento")
-                ),
-
-                React.createElement('div', { className: "grid grid-cols-3 gap-3" },
+                // Actualizado a grid 2x2 para incluir reporte
+                React.createElement('div', { className: "grid grid-cols-2 gap-3" },
                     React.createElement('div', { className: "glass-panel-premium p-4 rounded-2xl flex flex-col items-center justify-center gap-1" },
                         React.createElement('div', { className: "p-2 bg-emerald-500/10 rounded-full text-emerald-400 mb-1" }, React.createElement(TrendingUp, { size: 16 })),
                         React.createElement('span', { className: "text-[10px] text-gray-500 uppercase font-bold" }, "Ingresos"),
@@ -1189,6 +1162,14 @@
                         React.createElement('div', { className: "p-2 bg-blue-500/10 rounded-full text-blue-400 mb-1" }, React.createElement(PiggyBank, { size: 16 })),
                         React.createElement('span', { className: "text-[10px] text-gray-500 uppercase font-bold" }, "Ahorro"),
                         React.createElement('span', { className: "text-sm font-bold text-white" }, `$${dashboardData.ahorro.toLocaleString()}`)
+                    ),
+                    React.createElement('div', { 
+                        onClick: onOpenReport,
+                        className: "glass-panel-premium p-4 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform cursor-pointer border border-white/5 hover:border-brand/30" 
+                    },
+                        React.createElement('div', { className: "p-2 bg-purple-500/10 rounded-full text-purple-400 mb-1" }, React.createElement(FileSpreadsheet, { size: 16 })),
+                        React.createElement('span', { className: "text-[10px] text-gray-500 uppercase font-bold" }, "Reportes"),
+                        React.createElement('span', { className: "text-sm font-bold text-white" }, "Ver todo")
                     )
                 ),
                 showRatesModal && React.createElement(RatesModal, { onClose: () => setShowRatesModal(false), rates, onUpdateRate }),
@@ -1237,7 +1218,6 @@
                 filteredTransactions.length === 0 ? 
                     React.createElement('div', { className: "text-center py-12 text-gray-500 bg-dark-surface/30 rounded-3xl border border-white/5 border-dashed" }, "No hay movimientos este mes") :
                     React.createElement('div', { className: "space-y-3" }, filteredTransactions.map(t => {
-                        // Lógica de Devaluación para Ahorro en VES
                         const isVesSaving = t.segment === 'ahorro' && t.currency === 'VES';
                         let devaluation = 0;
                         if (isVesSaving && rates.bcv && t.originalRate) {
@@ -1268,7 +1248,6 @@
                         ), 
                         React.createElement('div', { className: "text-right relative z-10" }, 
                             React.createElement('span', { className: `block font-bold text-lg ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}` }, `${t.type === 'income' ? '+' : '-'}${(t.amountUSD || 0).toFixed(2)}`), 
-                            // ACTUALIZADO: Etiqueta de moneda soporta EUR
                             React.createElement('span', { className: "text-xs text-gray-500 font-mono font-bold bg-black/30 px-1.5 py-0.5 rounded ml-auto w-fit block mt-1" }, 
                                 t.currency === 'USD' ? 'USD' : (t.currency === 'EUR' ? `€ ${t.amount}` : `Bs ${t.amount}`)
                             )
@@ -1322,7 +1301,6 @@
                         if (t.segment === 'ahorro' && t.currency === 'VES' && rates.bcv > 0) {
                             amount = t.amount / rates.bcv;
                         }
-                        // Nota: Para EUR, amountUSD ya viene calculado del formulario, así que se usa directo.
 
                         if (!data[t.segment].concepts[t.category]) { data[t.segment].concepts[t.category] = {}; periods.forEach(p => data[t.segment].concepts[t.category][p.id] = 0); } 
                         if (data[t.segment].concepts[t.category][pId] !== undefined) data[t.segment].concepts[t.category][pId] += amount; 
@@ -1454,7 +1432,6 @@
                 
                 getRatesFromAPI().then(async (r) => { 
                     if (r?.bcv) try { 
-                        // Merge con eur
                         await setDoc(doc(userRef, 'settings', 'rates'), r, { merge: true }); 
                     } catch(e) {} 
                 });
@@ -1472,19 +1449,25 @@
             return React.createElement(ErrorBoundary, null, 
                 React.createElement('div', { className: "h-screen w-full bg-app-bg flex flex-col text-white" },
                     React.createElement('div', { className: "flex-1 overflow-y-auto no-scrollbar" },
-                        currentTab === 'home' ? React.createElement(HomeView, { rates, transactions, onUpdateRate: updateRates, onOpenAdd: () => setShowTransactionModal(true), onEditTransaction: handleEditTransaction, user, onOpenProfile: () => setCurrentTab('profile') }) :
+                        currentTab === 'home' ? React.createElement(HomeView, { rates, transactions, onUpdateRate: updateRates, onOpenReport: () => setCurrentTab('report'), onEditTransaction: handleEditTransaction, user, onOpenProfile: () => setCurrentTab('profile') }) :
                         currentTab === 'history' ? React.createElement(HistoryView, { transactions, onEditTransaction: handleEditTransaction, rates }) :
                         currentTab === 'report' ? React.createElement(PnLReportView, { transactions, pnlStructure, rates }) : 
                         currentTab === 'budget' ? React.createElement(BudgetView, { pnlStructure, budgets, onUpdateBudgets: updateBudgets, transactions }) :
                         currentTab === 'config' ? React.createElement(ConfigView, { pnlData: pnlStructure, onUpdatePnl: updatePnl, userId: user.uid }) :
                         currentTab === 'profile' ? React.createElement(ProfileView, { user, onBack: () => setCurrentTab('home'), onLogout: () => signOut(auth) }) : null
                     ),
-                    currentTab !== 'profile' && React.createElement('nav', { className: "glass-panel-premium border-t-0 rounded-t-[2rem] safe-bottom pt-3 px-2 flex justify-around items-center fixed bottom-0 w-full shadow-2xl z-30" },
-                        ['home', 'budget', 'history', 'report', 'config'].map(tab => 
-                            React.createElement('button', { key: tab, onClick: () => setCurrentTab(tab), className: `p-4 rounded-2xl transition-all btn-press ${currentTab === tab ? 'text-brand bg-white/5' : 'text-gray-500'}` }, 
-                                React.createElement(tab === 'home' ? Home : tab === 'budget' ? PieChart : tab === 'history' ? History : tab === 'report' ? FileSpreadsheet : Settings, { size: 28, strokeWidth: currentTab === tab ? 2.5 : 2 })
-                            )
-                        )
+                    currentTab !== 'profile' && React.createElement('nav', { className: "glass-panel-premium border-t-0 rounded-t-[2rem] safe-bottom px-6 py-3 flex justify-between items-center fixed bottom-0 w-full shadow-2xl z-30" },
+                        React.createElement('button', { onClick: () => setCurrentTab('home'), className: `p-2 ${currentTab === 'home' ? 'text-brand' : 'text-gray-500'}` }, React.createElement(Home, { size: 24, strokeWidth: currentTab === 'home' ? 3 : 2 })),
+                        React.createElement('button', { onClick: () => setCurrentTab('budget'), className: `p-2 ${currentTab === 'budget' ? 'text-brand' : 'text-gray-500'}` }, React.createElement(PieChart, { size: 24, strokeWidth: currentTab === 'budget' ? 3 : 2 })),
+
+                        // Center Add Button
+                        React.createElement('button', {
+                            onClick: () => setShowTransactionModal(true),
+                            className: "w-14 h-14 bg-brand rounded-full flex items-center justify-center text-black fab-shadow border-4 border-app-bg -mt-8 mb-1 transition-transform active:scale-90"
+                        }, React.createElement(Plus, { size: 32, strokeWidth: 3 })),
+
+                        React.createElement('button', { onClick: () => setCurrentTab('history'), className: `p-2 ${currentTab === 'history' ? 'text-brand' : 'text-gray-500'}` }, React.createElement(History, { size: 24, strokeWidth: currentTab === 'history' ? 3 : 2 })),
+                        React.createElement('button', { onClick: () => setCurrentTab('config'), className: `p-2 ${currentTab === 'config' ? 'text-brand' : 'text-gray-500'}` }, React.createElement(Settings, { size: 24, strokeWidth: currentTab === 'config' ? 3 : 2 }))
                     ),
                     showTransactionModal && React.createElement(TransactionModal, { onClose: handleCloseModal, rates, userId: user.uid, pnlStructure, initialData: editingTransaction, projectDocId: PROJECT_DOC_ID })
                 )
@@ -1496,4 +1479,3 @@
     </script>
 </body>
 </html>
-
