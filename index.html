@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v1.3</title>
+    <title>Sencillo v1.4</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -161,7 +161,7 @@
             Wallet, TrendingUp, TrendingDown, Plus, Settings, 
             Calendar, DollarSign, RefreshCw, X, Save, ArrowRightLeft,
             LogOut, ChevronDown, Filter, Home, History, PieChart, Trash2, List, FileSpreadsheet,
-            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal, Receipt, CreditCard, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, MapPin, Phone, HelpCircle, AlertTriangle, Euro
+            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal, Receipt, CreditCard, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, MapPin, Phone, HelpCircle, AlertTriangle, Euro, FileText, BarChart3
         } from 'lucide-react';
 
         // --- FIREBASE SETUP ---
@@ -297,14 +297,14 @@
                                 React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Configura tus categorías de ingresos, gastos fijos y variables para adaptar la app a ti.")
                             )
                         ),
-                        // Paso 2: Agregar Movimientos
+                        // Paso 2: Agregar Movimientos (CAMBIO ICONO VERDE)
                         React.createElement('div', { className: "flex gap-4 items-start" },
-                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center shrink-0 shadow-neon" }, 
-                                React.createElement(Plus, { size: 24, strokeWidth: 2.5 })
+                            React.createElement('div', { className: "w-10 h-10 rounded-full bg-brand text-black flex items-center justify-center shrink-0 shadow-neon" }, 
+                                React.createElement(Plus, { size: 24, strokeWidth: 3 })
                             ),
                             React.createElement('div', { className: "pt-1" },
                                 React.createElement('strong', { className: "block text-white text-sm mb-1" }, "2. Agregar Movimientos"),
-                                React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Registra ingresos o gastos en Bs, Dólares (USD) o Euros (EUR).")
+                                React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Registra ingresos o gastos usando el botón central. Puedes usar Bs, USD o EUR.")
                             )
                         ),
                         // Paso 3: Presupuestos
@@ -1089,7 +1089,9 @@
 
             const prevMonth = () => { const newDate = new Date(currentDate); newDate.setMonth(newDate.getMonth() - 1); setCurrentDate(newDate); };
             const nextMonth = () => { const newDate = new Date(currentDate); newDate.setMonth(newDate.getMonth() + 1); setCurrentDate(newDate); };
-            const monthLabel = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(' de ', ' ');
+            const monthLabel = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            // Capitalizar
+            const formattedMonth = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
             const dashboardData = useMemo(() => {
                 const currentMonth = currentDate.getMonth();
@@ -1113,8 +1115,8 @@
 
             const username = user?.displayName ? user.displayName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Usuario');
 
-            return React.createElement('div', { className: "px-6 pb-32 space-y-6 animate-fade-in", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } },
-                React.createElement('header', { className: "flex justify-between items-center" }, 
+            return React.createElement('div', { className: "px-6 pb-32 space-y-4 animate-fade-in", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } },
+                React.createElement('header', { className: "flex justify-between items-center mb-2" }, 
                     React.createElement('h1', { className: "text-2xl font-black text-white tracking-tight" }, username),
                     React.createElement('div', { className: "flex items-center gap-4" },
                         React.createElement('button', { onClick: () => setShowHelpModal(true), className: "w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-white transition-colors bg-white/5 active:scale-90" }, React.createElement(HelpCircle, { size: 22 })),
@@ -1122,16 +1124,20 @@
                     )
                 ),
                 
-                // CARD PRINCIPAL
+                // SELECTOR DE FECHA (Fuera del Card)
+                React.createElement('div', { className: "flex items-center justify-between px-2 mb-2" },
+                    React.createElement('button', { onClick: prevMonth, className: "p-2 text-gray-400 hover:text-white transition-colors active:scale-90" }, React.createElement(ChevronLeft, { size: 28 })),
+                    React.createElement('span', { className: "text-xl font-bold text-white tracking-tight" }, formattedMonth),
+                    React.createElement('button', { onClick: nextMonth, className: "p-2 text-gray-400 hover:text-white transition-colors active:scale-90" }, React.createElement(ChevronRight, { size: 28 }))
+                ),
+
+                // CARD PRINCIPAL (Sin Selector)
                 React.createElement('div', { className: "relative w-full h-auto rounded-[2.5rem] p-8 overflow-hidden group shadow-neon transition-all" },
                     React.createElement('div', { className: "absolute inset-0 bg-card-gradient" }),
-                    React.createElement('button', { onClick: prevMonth, className: "absolute left-4 top-8 z-20 p-2 text-white/70 hover:text-white active:scale-90" }, React.createElement(ChevronLeft, { size: 32, strokeWidth: 3 })),
-                    React.createElement('button', { onClick: nextMonth, className: "absolute right-4 top-8 z-20 p-2 text-white/70 hover:text-white active:scale-90" }, React.createElement(ChevronRight, { size: 32, strokeWidth: 3 })),
-
+                    
                     React.createElement('div', { className: "relative z-10 flex flex-col items-center text-center" },
                         React.createElement('div', { className: "flex flex-col items-center justify-center mb-2" },
-                             React.createElement('span', { className: "text-[10px] text-emerald-100/70 font-bold uppercase tracking-widest" }, "BALANCE"),
-                             React.createElement('span', { className: "text-lg font-black text-white uppercase tracking-tight leading-none" }, monthLabel)
+                             React.createElement('span', { className: "text-[10px] text-emerald-100/70 font-bold uppercase tracking-widest" }, "BALANCE NETO"),
                         ),
                         React.createElement('h2', { className: "text-5xl font-black text-white tracking-tighter mb-1 drop-shadow-lg" }, `$${dashboardData.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`),
                         
@@ -1146,7 +1152,7 @@
                     )
                 ),
                 
-                // Actualizado a grid 2x2 para incluir reporte
+                // KPI GRID (Ingresos, Gastos, Ahorro, NETO)
                 React.createElement('div', { className: "grid grid-cols-2 gap-3" },
                     React.createElement('div', { className: "glass-panel-premium p-4 rounded-2xl flex flex-col items-center justify-center gap-1" },
                         React.createElement('div', { className: "p-2 bg-emerald-500/10 rounded-full text-emerald-400 mb-1" }, React.createElement(TrendingUp, { size: 16 })),
@@ -1163,15 +1169,35 @@
                         React.createElement('span', { className: "text-[10px] text-gray-500 uppercase font-bold" }, "Ahorro"),
                         React.createElement('span', { className: "text-sm font-bold text-white" }, `$${dashboardData.ahorro.toLocaleString()}`)
                     ),
-                    React.createElement('div', { 
-                        onClick: onOpenReport,
-                        className: "glass-panel-premium p-4 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform cursor-pointer border border-white/5 hover:border-brand/30" 
-                    },
-                        React.createElement('div', { className: "p-2 bg-purple-500/10 rounded-full text-purple-400 mb-1" }, React.createElement(FileSpreadsheet, { size: 16 })),
-                        React.createElement('span', { className: "text-[10px] text-gray-500 uppercase font-bold" }, "Reportes"),
-                        React.createElement('span', { className: "text-sm font-bold text-white" }, "Ver todo")
+                    // Nuevo KPI: RESULTADO NETO
+                    React.createElement('div', { className: "glass-panel-premium p-4 rounded-2xl flex flex-col items-center justify-center gap-1" },
+                        React.createElement('div', { className: `p-2 rounded-full mb-1 ${dashboardData.balance >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}` }, 
+                            dashboardData.balance >= 0 ? React.createElement(Check, { size: 16 }) : React.createElement(AlertTriangle, { size: 16 })
+                        ),
+                        React.createElement('span', { className: "text-[10px] text-gray-500 uppercase font-bold" }, "Resultado"),
+                        React.createElement('span', { className: `text-sm font-bold ${dashboardData.balance >= 0 ? 'text-emerald-400' : 'text-red-400'}` }, `$${dashboardData.balance.toLocaleString()}`)
+                    ),
+                ),
+
+                // BOTÓN REPORTES SEPARADO
+                React.createElement('button', { 
+                    onClick: onOpenReport,
+                    className: "w-full p-4 glass-panel-premium rounded-2xl flex items-center justify-between group active:scale-[0.98] transition-all border border-white/5 hover:border-brand/30" 
+                },
+                    React.createElement('div', { className: "flex items-center gap-4" },
+                        React.createElement('div', { className: "w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 shadow-sm" }, 
+                            React.createElement(FileSpreadsheet, { size: 20 })
+                        ),
+                        React.createElement('div', { className: "text-left" },
+                            React.createElement('span', { className: "block text-white font-bold" }, "Reportes Detallados"),
+                            React.createElement('span', { className: "text-xs text-gray-500 font-medium" }, "Analiza tendencias y rendimiento")
+                        )
+                    ),
+                    React.createElement('div', { className: "w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-white group-hover:bg-white/10 transition-colors" },
+                        React.createElement(ChevronRight, { size: 18 })
                     )
                 ),
+
                 showRatesModal && React.createElement(RatesModal, { onClose: () => setShowRatesModal(false), rates, onUpdateRate }),
                 showHelpModal && React.createElement(IntroModal, { onClose: handleCloseHelp })
             );
@@ -1479,5 +1505,3 @@
     </script>
 </body>
 </html>
-
-
