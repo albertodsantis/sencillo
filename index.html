@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Sencillo v1.8</title>
+    <title>Sencillo v1.9</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -160,13 +160,13 @@
             Wallet, TrendingUp, TrendingDown, Plus, Settings, 
             Calendar, DollarSign, RefreshCw, X, Save, ArrowRightLeft,
             LogOut, ChevronDown, Filter, Home, History, PieChart, Trash2, List, FileSpreadsheet,
-            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal, Receipt, CreditCard, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, MapPin, Phone, HelpCircle, AlertTriangle, Euro, FileText, BarChart3, CalendarRange, Globe
+            Users, User, Check, Repeat, Pencil, Loader2, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, PiggyBank, Mail, Lock, Search, AlertCircle, ShieldCheck, Bug, Database, Terminal, Receipt, CreditCard, Info, Maximize2, Minimize2, ZoomIn, ZoomOut, MapPin, Phone, HelpCircle, AlertTriangle, Euro, FileText, BarChart3, CalendarRange, Globe, AlertOctagon
         } from 'lucide-react';
 
         // --- FIREBASE SETUP ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, signInAnonymously, onAuthStateChanged, signInWithCustomToken, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, initializeFirestore, memoryLocalCache, collection, doc, setDoc, getDoc, onSnapshot, query, orderBy, limit, addDoc, deleteDoc, updateDoc, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, initializeFirestore, memoryLocalCache, collection, doc, setDoc, getDoc, getDocs, onSnapshot, query, orderBy, limit, addDoc, deleteDoc, updateDoc, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const ROOT_COLLECTION = 'projects';
         const PROJECT_DOC_ID = 'sencillo-app-40a36';
@@ -226,10 +226,9 @@
             { id: 'biannual', label: 'Semestral (c/6 meses)' }
         ];
 
-        // --- FUNCION DE TASAS ACTUALIZADA ---
+        // --- FUNCION DE TASAS ---
         const getRatesFromAPI = async () => {
             try {
-                // Obtenemos tasas de Venezuela y tasa global EUR/USD
                 const [cotizacionesRes, parallelRes, globalRes] = await Promise.all([
                     fetch('https://ve.dolarapi.com/v1/cotizaciones').catch(() => null),
                     fetch('https://ve.dolarapi.com/v1/dolares/paralelo').catch(() => null),
@@ -239,7 +238,6 @@
                 const newRates = { bcv: 0, parallel: 0, eur: 0, eurCross: 0 };
                 let bcvRate = 0;
                 
-                // 1. Dólar BCV
                 if (cotizacionesRes && cotizacionesRes.ok) { 
                     const data = await cotizacionesRes.json();
                     const usd = data.find(item => item.moneda === 'USD');
@@ -249,36 +247,28 @@
                     }
                 }
                 
-                // 2. Dólar Paralelo
                 if (parallelRes && parallelRes.ok) { 
                     const d = await parallelRes.json(); 
                     if (d.promedio) newRates.parallel = parseFloat(d.promedio); 
                 }
                 
-                // 3. Euro BCV (Calculado: BCV Dolar * (1 EUR en USD))
-                // La API open.er-api devuelve "EUR": 0.9X (lo que significa 1 USD = 0.9X EUR)
-                // Nosotros queremos 1 EUR = X USD. Por tanto: 1 / rates.EUR
                 if (bcvRate > 0 && globalRes && globalRes.ok) {
                     const globalData = await globalRes.json();
-                    const usdToEur = globalData.rates.EUR; // 1 USD = X EUR
+                    const usdToEur = globalData.rates.EUR; 
                     
                     if (usdToEur) {
-                        const eurToUsd = 1 / usdToEur; // 1 EUR = Y USD
-                        // Euro en Bolivares = BCV (Bs/$) * (USD/€)
+                        const eurToUsd = 1 / usdToEur;
                         const bcvEur = bcvRate * eurToUsd;
-                        
                         newRates.eur = parseFloat(bcvEur.toFixed(4));
-                        newRates.eurCross = parseFloat(eurToUsd.toFixed(4)); // Guardamos el factor para mostrarlo
+                        newRates.eurCross = parseFloat(eurToUsd.toFixed(4)); 
                     }
                 } else if (bcvRate > 0) {
-                     // Fallback si falla la API global: usar el Euro que reporta DolarAPI (si existe)
                      if (cotizacionesRes && cotizacionesRes.ok) {
                          const data = await cotizacionesRes.json();
                          const eur = data.find(item => item.moneda === 'EUR');
                          if (eur && eur.promedio) newRates.eur = parseFloat(eur.promedio);
                      }
                 }
-                
                 return newRates;
             } catch (e) { console.error("Error al obtener tasas:", e); return null; }
         };
@@ -316,7 +306,6 @@
                  React.createElement('div', { className: "bg-dark-card p-6 rounded-[2rem] border border-white/10 max-w-sm w-full animate-bounce-in shadow-glass" },
                     
                     React.createElement('div', { className: "space-y-5 mb-6 mt-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" },
-                        // Paso 1: Personalización
                         React.createElement('div', { className: "flex gap-4 items-start" },
                             React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
                                 React.createElement(Settings, { size: 20 })
@@ -326,7 +315,6 @@
                                 React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Configura tus categorías de ingresos, gastos fijos y variables para adaptar la app a ti.")
                             )
                         ),
-                        // Paso 2: Agregar Movimientos (CAMBIO ICONO VERDE)
                         React.createElement('div', { className: "flex gap-4 items-start" },
                             React.createElement('div', { className: "w-10 h-10 rounded-full bg-brand text-black flex items-center justify-center shrink-0 shadow-neon" }, 
                                 React.createElement(Plus, { size: 24, strokeWidth: 3 })
@@ -336,7 +324,6 @@
                                 React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Registra ingresos o gastos usando el botón central. Puedes usar Bs, USD o EUR.")
                             )
                         ),
-                        // Paso 3: Presupuestos
                         React.createElement('div', { className: "flex gap-4 items-start" },
                             React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
                                 React.createElement(PieChart, { size: 20 })
@@ -346,7 +333,6 @@
                                 React.createElement('p', { className: "text-gray-400 text-xs leading-relaxed" }, "Define límites para tus Gastos Variables y mantén siempre positivo tu Disponible Flexible.")
                             )
                         ),
-                        // Paso 4: Reportes
                         React.createElement('div', { className: "flex gap-4 items-start" },
                             React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-dark-surface border border-white/10 flex items-center justify-center text-gray-400 shrink-0 shadow-sm" }, 
                                 React.createElement(FileSpreadsheet, { size: 20 })
@@ -477,6 +463,30 @@
                 }
             };
 
+            const handleResetTransactions = async () => {
+                if(!confirm("⚠️ ZONA DE PELIGRO\n\n¿Estás 100% seguro de eliminar TODOS tus movimientos y empezar de cero?\n\nEsta acción NO se puede deshacer.")) return;
+                if(!confirm("Confirma nuevamente: Se borrará todo tu historial de ingresos y gastos permanentemente.")) return;
+                
+                setIsSaving(true);
+                try {
+                    const q = query(collection(db, ROOT_COLLECTION, PROJECT_DOC_ID, 'users', user.uid, 'transactions'));
+                    const snapshot = await getDocs(q);
+                    
+                    const batch = writeBatch(db);
+                    snapshot.docs.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    await batch.commit();
+                    setMsg({ type: 'success', text: 'Historial eliminado correctamente' });
+                    setTimeout(() => setMsg(null), 3000);
+                } catch (e) {
+                    setMsg({ type: 'error', text: 'Error al eliminar: ' + e.message });
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
             const handleDeleteAccount = async () => {
                 if (confirm("¿Estás seguro de eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos.")) {
                     try {
@@ -596,20 +606,16 @@
                         ),
                     ),
 
-                    React.createElement('div', { className: "flex items-center justify-between px-4 py-2" },
-                        React.createElement('span', { className: "text-white font-medium" }, "Recibir novedades"),
-                        React.createElement('button', { 
-                            onClick: () => handleChange('receivePromotions', !profileData.receivePromotions),
-                            className: `w-14 h-8 rounded-full transition-colors relative ${profileData.receivePromotions ? 'bg-brand shadow-neon' : 'bg-dark-highlight'}` 
-                        },
-                            React.createElement('div', { className: `absolute top-1 w-6 h-6 bg-white rounded-full transition-transform shadow-md ${profileData.receivePromotions ? 'left-7' : 'left-1'}` })
-                        )
-                    ),
-
                     React.createElement('div', { className: "space-y-3 pt-4" },
                         React.createElement(Button, { variant: "ghost", onClick: handlePasswordReset, className: "text-brand hover:text-brand-light" }, "Cambiar Contraseña"),
                         React.createElement(Button, { variant: "destructive", onClick: onLogout }, "Cerrar Sesión"),
-                        React.createElement('button', { onClick: handleDeleteAccount, className: "w-full py-4 text-xs font-bold text-red-700 hover:text-red-500 transition-colors uppercase tracking-widest" }, "Eliminar mi cuenta")
+                        
+                        React.createElement('div', { className: "pt-6 border-t border-white/10 mt-6" },
+                            React.createElement('button', { onClick: handleResetTransactions, className: "w-full py-4 rounded-xl bg-red-900/20 text-red-500 border border-red-500/30 font-bold mb-3 flex items-center justify-center gap-2" }, 
+                                React.createElement(AlertOctagon, { size: 18 }), "Resetear Movimientos"
+                            ),
+                            React.createElement('button', { onClick: handleDeleteAccount, className: "w-full py-4 text-xs font-bold text-gray-500 hover:text-red-500 transition-colors uppercase tracking-widest" }, "Eliminar mi cuenta")
+                        )
                     )
                 )
             );
@@ -619,6 +625,10 @@
             const [newConcept, setNewConcept] = useState("");
             const [activeSegment, setActiveSegment] = useState("ingresos");
             const [saveStatus, setSaveStatus] = useState('idle');
+            
+            // Estado para edición
+            const [editingIndex, setEditingIndex] = useState(-1);
+            const [editingText, setEditingText] = useState("");
 
             const handleAdd = async () => {
                 if (!newConcept.trim()) return;
@@ -640,6 +650,23 @@
                 setTimeout(() => setSaveStatus('idle'), 2000);
             };
 
+            const startEditing = (index, currentText) => {
+                setEditingIndex(index);
+                setEditingText(currentText);
+            };
+
+            const saveEdit = async () => {
+                if (!editingText.trim()) return;
+                setSaveStatus('saving');
+                const updatedList = [...(pnlData[activeSegment] || [])];
+                updatedList[editingIndex] = editingText.trim();
+                const newData = { ...pnlData, [activeSegment]: updatedList };
+                await onUpdatePnl(newData);
+                setSaveStatus('saved');
+                setEditingIndex(-1);
+                setTimeout(() => setSaveStatus('idle'), 2000);
+            };
+
             return React.createElement('div', { className: "h-full flex flex-col bg-app-bg", style: { paddingTop: "calc(env(safe-area-inset-top) + 24px)" } },
                 React.createElement('div', { className: "px-6 flex justify-between items-start" },
                     React.createElement('div', { className: "mb-6" }, 
@@ -651,7 +678,7 @@
                     React.createElement('div', { className: "flex gap-3 overflow-x-auto pb-4 mb-2 scrollbar-hide" },
                         ["ingresos", "ahorro", "gastos_fijos", "gastos_variables"].map(seg => 
                             React.createElement('button', {
-                                key: seg, onClick: () => setActiveSegment(seg),
+                                key: seg, onClick: () => { setActiveSegment(seg); setEditingIndex(-1); },
                                 className: `px-5 py-3 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeSegment === seg ? 'bg-brand text-black shadow-neon' : 'bg-dark-surface text-gray-400 border border-white/10'}`
                             }, SEGMENTS[seg].label)
                         )
@@ -668,8 +695,26 @@
                     React.createElement('div', { className: "space-y-3" },
                         (pnlData[activeSegment] || []).map((concept, idx) => 
                             React.createElement('div', { key: idx, className: "flex justify-between items-center p-4 bg-dark-card rounded-2xl border border-gray-800" },
-                                React.createElement('span', { className: "font-medium text-gray-200" }, concept),
-                                React.createElement('button', { onClick: () => handleDelete(activeSegment, idx), className: "text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-colors" }, React.createElement(Trash2, { size: 18 }))
+                                editingIndex === idx ? (
+                                    React.createElement('div', { className: "flex items-center gap-2 w-full" },
+                                        React.createElement('input', {
+                                            value: editingText,
+                                            onChange: (e) => setEditingText(e.target.value),
+                                            className: "flex-1 bg-transparent border-b border-brand text-white font-medium focus:outline-none py-1",
+                                            autoFocus: true
+                                        }),
+                                        React.createElement('button', { onClick: saveEdit, className: "p-2 text-brand hover:bg-emerald-500/10 rounded-full" }, React.createElement(Check, { size: 18 })),
+                                        React.createElement('button', { onClick: () => setEditingIndex(-1), className: "p-2 text-gray-400 hover:text-white" }, React.createElement(X, { size: 18 }))
+                                    )
+                                ) : (
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('span', { className: "font-medium text-gray-200" }, concept),
+                                        React.createElement('div', { className: "flex items-center gap-1" },
+                                            React.createElement('button', { onClick: () => startEditing(idx, concept), className: "text-gray-400 p-2 hover:text-white rounded-lg transition-colors" }, React.createElement(Pencil, { size: 16 })),
+                                            React.createElement('button', { onClick: () => handleDelete(activeSegment, idx), className: "text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-colors" }, React.createElement(Trash2, { size: 18 }))
+                                        )
+                                    )
+                                )
                             )
                         )
                     )
@@ -935,14 +980,9 @@
                 if (currency === 'USD') return parseFloat(amount);
                 
                 if (currency === 'EUR') {
-                    // Euro BCV calculado o manual
                     const eurRateInBs = rateType === 'manual' ? customRate : (rates.eur || 0);
                     const usdRateInBs = rates.bcv || 1; 
-                    
                     if (eurRateInBs === 0 || usdRateInBs === 0) return 0;
-                    
-                    // Convertimos Bs (valor de los Euros) a USD usando tasa BCV
-                    // Si tengo 100 EUR, son X Bs. Esos X Bs son Y USD.
                     const amountInBs = parseFloat(amount) * eurRateInBs;
                     return amountInBs / usdRateInBs;
                 }
@@ -1170,13 +1210,10 @@
                     let includeTransaction = false;
                     
                     if (viewMode === 'month') {
-                        // Solo el mes exacto
                         includeTransaction = (tYear === selectedYear && tMonth === selectedMonth);
                     } else if (viewMode === 'ytd') {
-                        // Año actual hasta el mes seleccionado (inclusivo)
                         includeTransaction = (tYear === selectedYear && tMonth <= selectedMonth);
                     } else if (viewMode === 'year') {
-                        // Todo el año seleccionado
                         includeTransaction = (tYear === selectedYear);
                     }
 
@@ -1264,7 +1301,7 @@
                     React.createElement(RefreshCw, { size: 16, className: "text-emerald-500 opacity-80 shrink-0 group-hover:rotate-180 transition-transform duration-500" })
                 ),
 
-                // CARD PRINCIPAL (Rediseñado - Más limpio)
+                // CARD PRINCIPAL
                 React.createElement('div', { className: "relative w-full h-auto rounded-[2.5rem] p-5 overflow-hidden group shadow-neon transition-all" },
                     React.createElement('div', { className: "absolute inset-0 bg-card-gradient" }),
                     
@@ -1278,7 +1315,7 @@
                     )
                 ),
                 
-                // KPI GRID (Ingresos, Gastos, Ahorro, NETO)
+                // KPI GRID
                 React.createElement('div', { className: "grid grid-cols-2 gap-3" },
                     React.createElement('div', { className: "glass-panel-premium p-4 rounded-2xl flex flex-col items-center justify-center gap-1" },
                         React.createElement('div', { className: "p-2 bg-emerald-500/10 rounded-full text-emerald-400 mb-1" }, React.createElement(TrendingUp, { size: 16 })),
@@ -1291,7 +1328,7 @@
                         React.createElement('span', { className: "text-sm font-bold text-white" }, `$${dashboardData.gastos.toLocaleString()}`)
                     ),
                     
-                    // --- KPI AHORRO MEJORADO CON BS ---
+                    // --- KPI AHORRO ---
                     React.createElement('div', { className: "glass-panel-premium p-4 rounded-2xl flex flex-col items-center justify-center gap-1 relative overflow-hidden" },
                         React.createElement('div', { className: "p-2 bg-blue-500/10 rounded-full text-blue-400 mb-1" }, React.createElement(PiggyBank, { size: 16 })),
                         React.createElement('span', { className: "text-[10px] text-gray-500 uppercase font-bold" }, "Ahorro"),
@@ -1435,19 +1472,20 @@
             const reportData = useMemo(() => { 
                 const data = { net: {}, available: {}, flexibleAvailable: {} }; 
                 const segments = ['ingresos', 'gastos_fijos', 'gastos_variables', 'ahorro']; 
+                
+                // Inicializamos los totales por segmento
                 segments.forEach(seg => { 
                     data[seg] = { concepts: {}, total: {} }; 
-                    (pnlStructure[seg] || []).forEach(concept => { 
-                        data[seg].concepts[concept] = {}; 
-                        periods.forEach(p => data[seg].concepts[concept][p.id] = 0); 
-                    }); 
+                    // No pre-llenamos conceptos para permitir la creación dinámica por moneda
                     periods.forEach(p => data[seg].total[p.id] = 0); 
                 }); 
+                
                 periods.forEach(p => { data.net[p.id] = 0; data.available[p.id] = 0; data.flexibleAvailable[p.id] = 0; }); 
                 
                 transactions.forEach(t => { 
                     const tDateStr = t.date.split('T')[0]; 
                     if (tDateStr < startDate || tDateStr > endDate) return; 
+                    
                     let pId = ""; 
                     if (granularity === 'daily') pId = tDateStr; 
                     else if (granularity === 'monthly') pId = tDateStr.substring(0, 7); 
@@ -1457,6 +1495,7 @@
                         const period = periods.find(p => { const pDate = new Date(p.id + "T12:00:00"); const nextPDate = new Date(pDate); nextPDate.setDate(nextPDate.getDate() + 7); return tTime >= pDate.getTime() && tTime < nextPDate.getTime(); }); 
                         if (period) pId = period.id; 
                     } 
+                    
                     if (pId && data[t.segment]) { 
                         let amount = t.amountUSD || 0; 
                         
@@ -1464,15 +1503,54 @@
                             amount = t.amount / rates.bcv;
                         }
 
-                        if (!data[t.segment].concepts[t.category]) { data[t.segment].concepts[t.category] = {}; periods.forEach(p => data[t.segment].concepts[t.category][p.id] = 0); } 
-                        if (data[t.segment].concepts[t.category][pId] !== undefined) data[t.segment].concepts[t.category][pId] += amount; 
+                        // CREACIÓN DE LLAVE DINÁMICA POR MONEDA
+                        const currencyLabel = t.currency === 'VES' ? 'Bs' : (t.currency === 'USD' ? 'USD' : 'EUR');
+                        const conceptKey = `${t.category} (${currencyLabel})`;
+
+                        if (!data[t.segment].concepts[conceptKey]) { 
+                            data[t.segment].concepts[conceptKey] = {}; 
+                            periods.forEach(p => data[t.segment].concepts[conceptKey][p.id] = 0); 
+                        } 
+                        
+                        if (data[t.segment].concepts[conceptKey][pId] !== undefined) {
+                            data[t.segment].concepts[conceptKey][pId] += amount; 
+                        }
+
                         data[t.segment].total[pId] += amount; 
+                        
                         if (SEGMENTS[t.segment].type === 'income') data.net[pId] += amount; else data.net[pId] -= amount; 
                     } 
                 }); 
+
                 periods.forEach(p => { if(!p.id) return; const totalIncome = data.ingresos.total[p.id] || 0; const totalSavings = data.ahorro.total[p.id] || 0; const totalFixed = data.gastos_fijos.total[p.id] || 0; data.available[p.id] = totalIncome - totalSavings; data.flexibleAvailable[p.id] = totalIncome - totalSavings - totalFixed; }); 
                 return data; 
             }, [transactions, periods, granularity, startDate, endDate, pnlStructure, rates]);
+
+            const renderTableContent = () => (
+                React.createElement('table', { className: "pnl-table border-collapse" },
+                    React.createElement('thead', null, React.createElement('tr', null, React.createElement('th', { className: "pnl-cell-head pnl-col-sticky" }, ""), periods.map(p => React.createElement('th', { key: p.id, className: "pnl-cell-head min-w-[80px]" }, p.label)))),
+                    React.createElement('tbody', null,
+                        ['ingresos', 'ahorro'].map(seg => React.createElement(React.Fragment, { key: seg }, 
+                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-group-header" }, SEGMENTS[seg].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-group-header" }))), 
+                            Object.entries(reportData[seg].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4 text-xs" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
+                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-white" }, `Total ${SEGMENTS[seg].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-total" }, Math.round(reportData[seg].total[p.id]).toLocaleString()))))
+                        ),
+                        React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-available" }, "DISPONIBLE"), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-available" }, Math.round(reportData.available[p.id]).toLocaleString()))),
+                        React.createElement(React.Fragment, { key: 'gastos_fijos' }, 
+                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-group-header" }, SEGMENTS['gastos_fijos'].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-group-header" }))), 
+                            Object.entries(reportData['gastos_fijos'].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4 text-xs" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
+                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-white" }, `Total ${SEGMENTS['gastos_fijos'].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-card text-right font-bold text-brand border-b border-white/10" }, Math.round(reportData['gastos_fijos'].total[p.id]).toLocaleString())))
+                        ),
+                        React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-flexible" }, "DISP. FLEXIBLE"), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-purple-500/10 text-right font-bold text-purple-400 border-b border-white/10" }, Math.round(reportData.flexibleAvailable[p.id]).toLocaleString()))),
+                        React.createElement(React.Fragment, { key: 'gastos_variables' }, 
+                            React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-surface/50 font-bold text-white border-b border-white/5" }, SEGMENTS['gastos_variables'].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-surface/50 border-b border-white/5" }))), 
+                            Object.entries(reportData['gastos_variables'].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4 text-xs" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
+                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-white" }, `Total ${SEGMENTS['gastos_variables'].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-total" }, Math.round(reportData['gastos_variables'].total[p.id]).toLocaleString())))
+                        ),
+                        React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-net" }, "RESULTADO NETO"), periods.map(p => React.createElement('td', { key: p.id, className: `pnl-cell pnl-row-net ${reportData.net[p.id] < 0 ? 'text-red-500' : 'text-emerald-400'}` }, Math.round(reportData.net[p.id]).toLocaleString())))
+                    )
+                )
+            );
 
             if (isFullScreen) {
                 return React.createElement('div', { className: "fixed inset-0 z-50 bg-dark-base flex flex-col h-full w-full animate-fade-in" },
@@ -1482,30 +1560,7 @@
                     ),
                     React.createElement('div', { className: "flex-1 overflow-auto bg-dark-base relative" },
                          React.createElement('div', { className: "p-4 min-w-max transition-transform origin-top-left", style: { transform: `scale(${zoomLevel})` } }, 
-                            React.createElement('table', { className: "pnl-table border-collapse" },
-                                React.createElement('thead', null, React.createElement('tr', null, React.createElement('th', { className: "text-left p-4 bg-dark-surface text-brand font-bold border-b border-white/10" }, ""), periods.map(p => React.createElement('th', { key: p.id, className: "text-center p-4 bg-dark-surface text-brand font-bold border-b border-white/10 min-w-[100px]" }, p.label)))),
-                                React.createElement('tbody', null,
-                                    ['ingresos', 'ahorro'].map(seg => React.createElement(React.Fragment, { key: seg }, 
-                                        React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-surface/50 font-bold text-white border-b border-white/5" }, SEGMENTS[seg].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-surface/50 border-b border-white/5" }))), 
-                                        Object.entries(reportData[seg].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "p-4 text-gray-400 border-b border-white/5 pl-8" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
-                                        React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-card font-bold text-brand border-b border-white/10" }, `Total ${SEGMENTS[seg].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-card text-right font-bold text-brand border-b border-white/10" }, Math.round(reportData[seg].total[p.id]).toLocaleString()))))
-                                    ),
-                                    React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-blue-500/10 font-bold text-blue-400 border-b border-white/10" }, "DISPONIBLE"), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-blue-500/10 text-right font-bold text-blue-400 border-b border-white/10" }, Math.round(reportData.available[p.id]).toLocaleString()))),
-                                    React.createElement(React.Fragment, { key: 'gastos_fijos' }, 
-                                        React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-surface/50 font-bold text-white border-b border-white/5" }, SEGMENTS['gastos_fijos'].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-surface/50 border-b border-white/5" }))), 
-                                        Object.entries(reportData['gastos_fijos'].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "p-4 text-gray-400 border-b border-white/5 pl-8" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
-                                        React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-card font-bold text-brand border-b border-white/10" }, `Total ${SEGMENTS['gastos_fijos'].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-card text-right font-bold text-brand border-b border-white/10" }, Math.round(reportData['gastos_fijos'].total[p.id]).toLocaleString())))
-                                    ),
-                                    React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-purple-500/10 font-bold text-purple-400 border-b border-white/10" }, "DISP. FLEXIBLE"), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-purple-500/10 text-right font-bold text-purple-400 border-b border-white/10" }, Math.round(reportData.flexibleAvailable[p.id]).toLocaleString()))),
-                                    React.createElement(React.Fragment, { key: 'gastos_variables' }, 
-                                        React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-surface/50 font-bold text-white border-b border-white/5" }, SEGMENTS['gastos_variables'].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-surface/50 border-b border-white/5" }))), 
-                                        Object.entries(reportData['gastos_variables'].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "p-4 text-gray-400 border-b border-white/5 pl-8" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
-                                        React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-white" }, `Total ${SEGMENTS['gastos_variables'].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-total" }, Math.round(reportData['gastos_variables'].total[p.id]).toLocaleString())))
-                                    ),
-                                    React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-card font-bold text-white border-b border-white/10", style: { borderTop: '2px solid #333' } }, "TOTAL GASTOS (F+V)"), periods.map(p => { const totalF = reportData.gastos_fijos.total[p.id] || 0; const totalV = reportData.gastos_variables.total[p.id] || 0; return React.createElement('td', { key: p.id, className: "p-4 bg-dark-card text-right font-bold text-white border-b border-white/10", style: { borderTop: '2px solid #333' } }, Math.round(totalF + totalV).toLocaleString()); })),
-                                    React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-emerald-900/20 font-black text-emerald-400 border-t-2 border-emerald-500/50" }, "RESULTADO NETO"), periods.map(p => React.createElement('td', { key: p.id, className: `p-4 bg-emerald-900/20 text-right font-black border-t-2 border-emerald-500/50 ${reportData.net[p.id] < 0 ? 'text-red-400' : 'text-emerald-400'}` }, Math.round(reportData.net[p.id]).toLocaleString())))
-                                )
-                            )
+                            renderTableContent()
                         )
                     ),
                     React.createElement('div', { className: "zoom-controls" },
@@ -1545,29 +1600,7 @@
                     )
                 ),
                 React.createElement('div', { className: "flex-1 overflow-auto bg-app-bg pnl-table-container pb-36" }, 
-                    React.createElement('table', { className: "pnl-table" },
-                        React.createElement('thead', null, React.createElement('tr', null, React.createElement('th', { className: "pnl-cell-head pnl-col-sticky" }, ""), periods.map(p => React.createElement('th', { key: p.id, className: "pnl-cell-head min-w-[80px]" }, p.label)))),
-                        React.createElement('tbody', null,
-                            ['ingresos', 'ahorro'].map(seg => React.createElement(React.Fragment, { key: seg }, 
-                                React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-group-header" }, SEGMENTS[seg].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-group-header" }))), 
-                                Object.entries(reportData[seg].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
-                                React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-white" }, `Total ${SEGMENTS[seg].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-total" }, Math.round(reportData[seg].total[p.id]).toLocaleString()))))
-                            ),
-                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-available" }, "DISPONIBLE"), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-available" }, Math.round(reportData.available[p.id]).toLocaleString()))),
-                            React.createElement(React.Fragment, { key: 'gastos_fijos' }, 
-                                React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-group-header" }, SEGMENTS['gastos_fijos'].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-group-header" }))), 
-                                Object.entries(reportData['gastos_fijos'].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
-                                React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-white" }, `Total ${SEGMENTS['gastos_fijos'].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-card text-right font-bold text-brand border-b border-white/10" }, Math.round(reportData['gastos_fijos'].total[p.id]).toLocaleString())))
-                            ),
-                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-flexible" }, "DISP. FLEXIBLE"), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-purple-500/10 text-right font-bold text-purple-400 border-b border-white/10" }, Math.round(reportData.flexibleAvailable[p.id]).toLocaleString()))),
-                            React.createElement(React.Fragment, { key: 'gastos_variables' }, 
-                                React.createElement('tr', null, React.createElement('td', { className: "p-4 bg-dark-surface/50 font-bold text-white border-b border-white/5" }, SEGMENTS['gastos_variables'].label.toUpperCase()), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 bg-dark-surface/50 border-b border-white/5" }))), 
-                                Object.entries(reportData['gastos_variables'].concepts).map(([concept, values]) => React.createElement('tr', { key: concept }, React.createElement('td', { className: "pnl-cell pnl-col-sticky text-gray-400 pl-4" }, concept), periods.map(p => React.createElement('td', { key: p.id, className: "p-4 text-right text-gray-300 border-b border-white/5" }, values[p.id] === 0 ? '-' : Math.round(values[p.id]).toLocaleString())))), 
-                                React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-total text-white" }, `Total ${SEGMENTS['gastos_variables'].label}`), periods.map(p => React.createElement('td', { key: p.id, className: "pnl-cell pnl-row-total" }, Math.round(reportData['gastos_variables'].total[p.id]).toLocaleString())))
-                            ),
-                            React.createElement('tr', null, React.createElement('td', { className: "pnl-cell pnl-col-sticky pnl-row-net" }, "RESULTADO NETO"), periods.map(p => React.createElement('td', { key: p.id, className: `pnl-cell pnl-row-net ${reportData.net[p.id] < 0 ? 'text-red-500' : 'text-emerald-400'}` }, Math.round(reportData.net[p.id]).toLocaleString())))
-                        )
-                    )
+                    renderTableContent()
                 )
             );
         };
@@ -1638,7 +1671,6 @@
                         React.createElement('button', { onClick: () => setCurrentTab('home'), className: `p-2 ${currentTab === 'home' ? 'text-brand' : 'text-gray-500'}` }, React.createElement(Home, { size: 24, strokeWidth: currentTab === 'home' ? 3 : 2 })),
                         React.createElement('button', { onClick: () => setCurrentTab('budget'), className: `p-2 ${currentTab === 'budget' ? 'text-brand' : 'text-gray-500'}` }, React.createElement(PieChart, { size: 24, strokeWidth: currentTab === 'budget' ? 3 : 2 })),
 
-                        // --- CORRECCIÓN: Botón sin borde blanco ---
                         React.createElement('button', {
                             onClick: () => setShowTransactionModal(true),
                             className: "w-14 h-14 bg-brand rounded-full flex items-center justify-center text-black fab-shadow -mt-8 mb-1 transition-transform active:scale-90"
