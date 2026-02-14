@@ -891,20 +891,10 @@
         };
 
         // --- NUEVA MODAL DE TASAS (ESTILO INFO) ---
-        const RatesModal = ({ onClose, rates, onUpdateRate }) => {
-            const [isRefreshing, setIsRefreshing] = useState(false);
+        const RatesModal = ({ onClose, rates }) => {
             const today = new Date().toLocaleDateString('es-VE', { day: 'numeric', month: 'numeric' });
             
             const gap = useMemo(() => { if (!rates.bcv || !rates.parallel) return 0; return ((rates.parallel - rates.bcv) / rates.bcv) * 100; }, [rates]);
-
-            const fetchLiveRates = async () => {
-                setIsRefreshing(true);
-                const newRates = await getRatesFromAPI();
-                if (newRates) {
-                    onUpdateRate(newRates);
-                }
-                setTimeout(() => setIsRefreshing(false), 500);
-            };
 
             return React.createElement('div', { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 animate-fade-in" },
                 React.createElement('div', { className: "bg-dark-card p-6 rounded-[2rem] border border-white/10 max-w-sm w-full animate-bounce-in shadow-glass" },
@@ -924,7 +914,7 @@
                                 React.createElement('span', { className: "text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1" }, "BCV OFICIAL"),
                                 React.createElement('span', { className: "text-2xl font-black text-white" }, rates.bcv?.toFixed(2))
                            ),
-                           React.createElement('div', { className: "w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400" }, React.createElement(Check, { size: 20 }))
+                           React.createElement('div', { className: "w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400" }, React.createElement(DollarSign, { size: 20 }))
                          ),
                          
                          // Parallel Card
@@ -948,15 +938,6 @@
                            ),
                            React.createElement('div', { className: "w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400" }, React.createElement(Euro, { size: 20 }))
                          )
-                    ),
-                    
-                    React.createElement('button', { 
-                        onClick: fetchLiveRates,
-                        disabled: isRefreshing,
-                        className: "w-full py-4 bg-white text-black font-bold rounded-2xl hover:bg-gray-200 transition-colors btn-press flex items-center justify-center gap-2"
-                    }, 
-                        isRefreshing ? React.createElement(Loader2, { size: 18, className: "animate-spin" }) : React.createElement(RefreshCw, { size: 18 }),
-                        isRefreshing ? "Actualizando..." : "Actualizar Tasas"
                     )
                 )
             );
@@ -1447,7 +1428,7 @@
                 // NOTA: Se eliminó el botón de "Reportes Detallados" separado para limpiar la UI y dar espacio a futuras métricas.
                 // El acceso al reporte ahora está en la tarjeta principal.
 
-                showRatesModal && React.createElement(RatesModal, { onClose: () => setShowRatesModal(false), rates, onUpdateRate }),
+                showRatesModal && React.createElement(RatesModal, { onClose: () => setShowRatesModal(false), rates }),
                 showHelpModal && React.createElement(IntroModal, { onClose: handleCloseHelp })
             );
         };
